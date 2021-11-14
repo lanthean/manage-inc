@@ -1,0 +1,42 @@
+#!/bin/bash
+###
+# @Author	Martin Bortel
+# @Web		http://martinbortel.cz
+# @Email	me@martinbortel.cz
+# @Created	01/07/2013
+# 
+# @Package	my_small_bash_scripts
+#
+###
+
+# def vars
+EXP_ARGS=1
+path=~/inc/main
+
+
+#put here the code
+##TODO
+if [ "$#" -eq "$EXP_ARGS" ]; then
+	if [[ $1 == "." ]];then
+    d=$(pwd)
+	else
+		d=${path}/$(ls $path | grep $1)
+	fi
+	if [[ -f "${d}/ticket.ntx" ]] || [[ -f "${d}/ticket.txt" ]] || [[ -f "${d}/ticket.md" ]];then
+		vim $d/ticket.*
+	elif [[ -d "${d}" ]];then
+		# echo $path/$d
+		read -p "This might overwrite things, creating new ticket.md here $d/"
+		cd $d
+		sh ~/bin/newincf ticket v
+	else
+		echo $path/$1
+		read -p "This might overwrite things, creating new ticket.md here $path/$1/"
+		cd $path/$1
+		sh ~/bin/newincf ticket v
+	fi
+else
+	echo "| I do not know, what to open."
+fi
+#EOF
+##

@@ -1,0 +1,59 @@
+```
+##
+# My notes file
+# @Author	Ing. Martin Bortel
+# @Date		%DATE%
+# @Update	%UPDATE%
+# @Status	%STATUS% 
+# @Pri		%PRI%
+# @Type	  [CS/H2S/JIRA]
+#
+# @ID       %ID%
+# @LINK-TO  
+# @SF-ID    %SFID%
+# @CRQ      
+# @Wiki     
+#
+# @Topic    %TOPIC%
+# @Customer	%CUSTOMER%
+# @Product  %PRODUCT%
+# @System   %SYSTEMS%
+# @Release	%RELEASE%
+#
+# @Contact	%CONTACT%
+#
+# @Workaround	
+# @Solution		
+# @Progress	
+##
+```
+# %TOPIC%
+## [cust-desc] {{
+
+### [intake] {{
+
+eo:intake}}
+eo:cust-desc}}
+## [connection] {{
+
+eo:connection}}
+## [notes] {{
+### xxx {{
+#### update {{
+```email
+```
+####eo:update }}
+###eo:xxx }}
+### xxx {{
+#### update {{
+```email
+```
+####eo:update }}
+###eo:xxx }}
+##eo:notes}}
+## [close-notes] {{
+##eo:close-notes}}
+```
+# @EOF
+##
+```

@@ -1,0 +1,110 @@
+#!/usr/local/bin/bash
+##
+# @Author	Martin Bortel
+# @Web		http://martinbortel.cz
+# @Email	me@martinbortel.cz
+# @Created	04/05/2012 
+# @Updated	24/09/2020
+# 
+# @Package	my_small_bash_scripts
+# @File		bin/newincf
+###
+
+# def vars
+user='martin'
+handle='creating new incident file with template'
+script_name='newincf'
+EXP_ARGS=1
+DEF_ARGS=1
+EXT=md
+#start with something nice to say
+#echo "### Welcome $user
+# I will handle $handle for You now.."
+
+
+source /opt/generic_bash_functions/generic_bash_functions
+
+openfile () {
+  # $1 = filename
+  # $2 = editor
+
+
+  read -p "Do You want to open the file now? [Y/n]: " yn
+  if [[ $yn == "n" ]]; then
+    return
+  fi
+
+	path=`pwd`
+	filename="$1"
+	case $2 in
+		"k" | "kate" )
+		#* )
+			log i "Entering kate:"
+			#log "[i] Entering kate:"
+			kate $filename &
+			;;
+		"g" | "gedit" )
+		#* )
+			log i "Entering gedit:"
+			#log "[i] Entering gedit:"
+			gedit $filename &
+			;;
+		"gv" | "gvim" )
+		#* )
+			log i "Entering gvim:"
+			#log "[i] Entering gvim:"
+			gvim $filename
+			;;
+		#* )
+		"go" )
+			log d "Using Gnome-Open to access new file:"
+			#log "[d] Using Gnome-Open to access new file:"
+			gnome-open $filename &
+			;;
+		#"v" | "vim" )
+		* )
+			log i "Entering vim:"
+			#log "[i] Entering vim:"
+			/usr/bin/vim $filename
+			;;
+	esac
+}
+
+#put here the code
+if [ "$EXP_ARGS" -le "$#" ] || [ "$#" -gt "3" ]; then
+	log i "Creating new .$EXT file.."
+	#log "[i] Creating new .$EXT file.."
+	touch "$1.$EXT"
+	log i "Filling the file with template data.."
+	#log "[i] Filling the file with template data.."
+	cat $HOME/bin/manage-inc/inctpl > "$1.$EXT"
+
+  log d "sed -i \"~\" \"s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;\" \"$1.$EXT\""
+  #	set -x
+	if [[ $(uname) == "Darwin" ]];then
+		##
+		# Mac: sed -i expects "extension" of a backup file, without said extension it ends with error
+		# therefore sed -i >>"~"<< ..
+	 	sed -i "~" "s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;" "$1.$EXT"
+		if [ -f $1.$EXT~ ];then
+			log i "Removing temporary file $1.$EXT~ created by MacOS version of sed"
+			#log "[i] Removing temporary file $1.$EXT~ created by MacOS version of sed"
+			rm $1.$EXT~
+		fi
+	else
+		sed  -i "s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;" "$1.$EXT"
+	fi
+  #	set +x
+
+  openfile $1.$EXT
+else
+		echo " --"
+    echo "|[E] Usage $script_name {/path/to/new_$EXT_file [k|g|gv|go] [DATE] [UPDATE] [PRI] [ID] [SFID] [TOPIC] [CUSTOMER] [PRODUCT] [SYSTEM] [RELEASE] [CONTACT] [STATUS]}"
+    echo " --"
+fi
+
+#say good bye
+#echo "# It was my pleasure to serve You Ser.
+### Good bye "
+#EOF
+###
