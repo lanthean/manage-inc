@@ -109,10 +109,10 @@ function f_get_inc_filter () {
 		# check if user wants to see INC in back2ops
 		if [ $# -gt 0 ];then
 			case $1 in
-				"-b" )
+				"-b" | "--backtoops" )
 					path=$backtoops
 					;;
-				"-d" )
+				"-d" | "--done" )
 					path=$done_path
 					;;
 			esac
@@ -948,9 +948,9 @@ function f_ls_prototype () {
 	inc_file=/tmp/inc.manage-inc
 	jira_file=/tmp/jira.manage-inc
 	h2s_file=/tmp/h2s.manage-inc
-	if [ "$2" == "-bto" -o "$2" == "-b" -o "$2" == "-d" ]; then
+	if [ "$2" == "-bto" -o "$2" == "-b" -o "$2" == "-d" -o "$2" == "--done" ]; then
 		grep=$3
-		if [[ $2 == "-d" ]];then
+		if [[ $2 == "-d" ]] || [[ $2 == "--done" ]];then
 			path=$done_path
 			title_suffix="[DONE]"
 		fi
