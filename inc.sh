@@ -102,6 +102,36 @@ function f_get_user_consent() {
 		return
 	fi
 	}
+function f_get_incidents_short() {
+	# docstring
+	#
+	# $1 = arg - desc (type)
+	#
+	# return: 0 - success
+
+	f_ls_prototype li > /dev/null
+ 	cut -d "_" -f1 /tmp/inc.manage-inc
+	}
+function f_get_jira_short() {
+	# docstring
+	#
+	# $1 = arg - desc (type)
+	#
+	# return: 0 - success
+
+	f_ls_prototype lj > /dev/null
+ 	cut -d "_" -f1 /tmp/jira.manage-inc
+	}
+function f_get_h2s_short() {
+	# docstring
+	#
+	# $1 = arg - desc (type)
+	#
+	# return: 0 - success
+
+	f_ls_prototype lh > /dev/null
+ 	cut -d "_" -f1,2 /tmp/h2s.manage-inc
+	}
 function f_get_inc_filter () { 
 	if [ "$id" == "$id_def" ]; then
 		# no ID entered in argument, fetch one interactively
@@ -1153,6 +1183,12 @@ function f_id_as_first_argument () {
 
 ### Main {{
 f_s_init
+if [[ $1 == "--bashcompletion" ]];then
+	f_get_incidents_short
+	f_get_jira_short
+	f_get_h2s_short
+	exit 0
+fi
 f_s_boc
 if [ $EXP_ARGS -le $# ]; then
 	f_args $@

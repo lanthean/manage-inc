@@ -6,7 +6,7 @@ compile:
 	shc -f inc.sh -o inc
 	echo "Create/Update ~/bin/inc link"
 	ln -sf ${PWD}/inc ~/bin/inc
-
+	ln -sf ${PWD}/bash_completion.d/inc /opt/homebrew/etc/bash_completion.d/
 pre:
 	echo "Installing prerequisites"
 	if [[ "$(uname)" -eq "Darwin" ]];then
