@@ -46,7 +46,7 @@ function f_s_init () {
 	## 
 
 	LOG_FILE=$def_path/log/incidents.log
-	LOG_LEVEL=d
+	LOG_LEVEL=i
   if [ ! -d /opt/generic_bash_functions ];then
     echo "/opt/generic_bash_functions not found, attemting to clone from lanthean's github"
 	  pushd /opt
@@ -1154,7 +1154,7 @@ function f_id_as_first_argument () {
 		f_create_new_inc
 	elif [ $nlines -eq 1 ]; then
 		# Incident already exists
-		log w "Incident already exists: ${grepped}"
+		log w "Case already exists: ${path}/${grepped}"
 		read -p "|	Do you want to [O]pen ${id} or [r]ename it or [n]either? [O/r/n] " ron
 	    case $ron in
 			[Nn]* ) 
