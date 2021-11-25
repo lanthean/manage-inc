@@ -14,6 +14,8 @@ COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 ## Static functions
 function f_s_init () {
   # def vars
+	LOG_LEVEL=i
+
 	user="$(/usr/bin/whoami)"
 	handle='incident (plaintext/markdown/filetree) management'
 	script_name='manage-inc.sh'
@@ -30,23 +32,19 @@ function f_s_init () {
 	jira_path=$def_path/jira
 	done_path=$def_path/done
 	##
-	backtoops=$def_path/back2ops
-	path24x7=$def_path/24x7/$year
-	team=$path/team
+	backtoops_path=$def_path/back2ops
+	_24x7_path=$def_path/24x7/$year
+	team_path=$path/team
 	delim="__"
 	id_def="xxxxxx000000xxxxxx"
 	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})"
 	id=$id_def
-	# Function variables declaration
-	# f_get_remove
-	id_ch=1; team_ch=1; cust_ch=1; sfid_ch=1; desc_ch=1; prio_ch=1;
 	
 	## disable logging [true|false]
 	#LOG_DISABLED=true
 	## 
 
 	LOG_FILE=$def_path/log/incidents.log
-	LOG_LEVEL=i
   if [ ! -d /opt/generic_bash_functions ];then
     echo "/opt/generic_bash_functions not found, attemting to clone from lanthean's github"
 	  pushd /opt
@@ -140,7 +138,7 @@ function f_get_inc_filter () {
 		if [ $# -gt 0 ];then
 			case $1 in
 				"-b" | "--backtoops" )
-					path=$backtoops
+					path=$backtoops_path
 					;;
 				"-d" | "--done" )
 					path=$done_path
@@ -161,47 +159,53 @@ function f_get_inc_filter () {
 	fi
 	path=$def_path/main
 	} 
-function f_get_rename () { 
+function f_get_rename() {
+	# docstring
+	#
+	# $1 = arg - desc (type)
+	#
+	# return: 0 - success
+
 	read -p "|	What do you want to edit (empty: cancel|quit) [i=id|t=team|c=cust|s=sfid|d=desc|p=prio] ? " choice
 	case $choice in
 		[Ii] )
 			read -p "|	Enter new ID: " id
-			id_ch=0
+			log t "id: $id"
+			id_ch=1
 			f_get_rename
 			;;
 		[Tt] )
 			read -p "|	Enter new Team: " team
-			team_ch=0
+			log t "team: $team"
+			team_ch=1
 			f_get_rename
 			;;
 		[Cc] )
 			read -p "|	Enter new Customer: " cust
-			cust_ch=0
-			f_get_rename
-			;;
-		[Dd] )
-			read -p "|	Enter new Description: " $desc_raw
-			desc="${desc_raw// /_}"
-			desc_ch=0
+			log t "cust: $cust"
+			cust_ch=1
 			f_get_rename
 			;;
 		[Ss] )
 			read -p "|	Enter new SF-ID: " sfid
-			sfid_ch=0
+			log t "sfid: $sfid"
+			sfid_ch=1
 			f_get_rename
 			;;
-		[Pp] )
-			read -p "|	Enter new Priority: " prio
-			prio_ch=0
+		[Dd] )
+			read -p "|	Enter new Description: " desc_raw
+			desc=${desc_raw// /_}
+			log t "desc_raw: $desc_raw"
+			log t "desc: $desc"
+			desc_ch=1
 			f_get_rename
 			;;
 		* )
-			log w "Nothing to change."
+			log d "Nothing to change."
 			return
 			;;
 	esac
-	#log "f_get_rename:""id=""$id"" desc=""$desc"" stat=""$stat"" prio=""$prio"
- } 
+	}
 function f_get_log() { 
 	if [ "$LOG_DISABLED" = true ]; then
 		log w "I am sorry, but the log has been disabled and is not available."
@@ -386,18 +390,19 @@ function f_create_downloads_link() {
 	fi
 	log t "downloads path: ${downloads_path}"
 	if [[ -L $downloads_path/$id ]];then
-		log w "Link to ~/Downloads/$id already exists."
+		log w "Link to ~/Downloads/$id -> $path/$physical_directory/ already exists."
 	elif [[ -d $downloads_path/$id ]];then
     log w "There is a directory in place of the new link location - reversing"
-    ln -s $downloads_path/$id $path/$physical_directory/
+    log t "ln -sn $downloads_path/$id $path/$physical_directory/"
+    ln -sn $downloads_path/$id $path/$physical_directory/
 	else
 		physical_directory=$(ls ${path} | grep ${id})
-		log i "Creating link to ${downloads_path}/${id}."
+		log i "Creating link to ${downloads_path}/${id} -> $path/$physical_directory/"
 		log t "ln -sn ${path}/${physical_directory} ${downloads_path}/${id}"
 		ln -sn ${path}/${physical_directory} ${downloads_path}/${id}
 		if [ $? != 0 ];then
 			log e "Unknown error: Possibly broken link."
-			log e "Link to ${downloads_path}/${id} was not created."
+			log e "Link to ${downloads_path}/${id} -> $path/$physical_directory/ was not created."
 		fi
 	fi
 	}
@@ -412,16 +417,17 @@ function f_update_downloads_link_to_done() {
 	log t "downloads path: ${downloads_path}"
 	if [[ -L $downloads_path/$id ]];then
 		physical_directory=$(ls ${done_path} | grep ${id})
-		log i "Updating link to ${downloads_path}/${id}."
+		log i "Updating link to ${downloads_path}/${id} -> ${done_path}/${physical_directory}"
 		log t "ln -sfn ${done_path}/${physical_directory} ${downloads_path}/${id}"
 		ln -sfn ${done_path}/${physical_directory} ${downloads_path}/${id}
 		if [ $? != 0 ];then
-			log e "Unknown error: Possibly broken link."
-			log e "Link to ${downloads_path}/${id} was not updated."
+			log e "Unknown error: Possibly broken link"
+			log e "Link to ${downloads_path}/${id} was not updated"
 		fi
 	elif [[ -d $downloads_path/$id ]];then
     log w "There is a directory in place of the new link location - reversing"
-    ln -s $downloads_path/$id $done_path/$physical_directory/
+    log t "ln -sfn $downloads_path/$id $done_path/$physical_directory/"
+    ln -sfn $downloads_path/$id $done_path/$physical_directory/
 	fi
 	}
 function f_remove_downloads_link() {
@@ -502,6 +508,7 @@ function f_parse_inc_name() {
 	}
 function f_rename () { 
 	## Rename Incident folder
+	id_ch=0; team_ch=0; cust_ch=0; sfid_ch=0; desc_ch=0; prio_ch=0;
 	log t "id: $id"
 	f_get_inc_filter
 	if [ "$nlines" -gt 1 ]; then
@@ -518,36 +525,37 @@ function f_rename () {
 
 		filename=$(ls $path | grep $id)
 		arr=( ${filename//$delim/ } )
-		log i "id	... ${arr[0]}"
-		log i "team	... ${arr[1]}"
-    log i "cust	... ${arr[2]}"
-		log i "desc	... ${arr[3]}"
-		log i "sf-id	... ${arr[4]}"
+		log i "[i]d .............. ${arr[0]}"
+		log i "[t]eam ............ ${arr[1]}"
+    log i "[c]ustomer name ... ${arr[2]}"
+		log i "[s]f-id ........... ${arr[3]}"
+		log i "[d]escription ..... ${arr[4]}"
 	#	log i "prio	... ${arr[5]}"
 	
-		f_get_rename 
-		if [ $id_ch -eq 0 -o $team_ch -eq 0 -o $cust_ch -eq 0 -o $sfid_ch -eq 0 -o $desc_ch -eq 0 -o $prio_ch -eq 0 ]; then
-			if [ $id_ch -eq 1 ]; then
+		f_get_rename
+
+		if [ $id_ch -eq 1 -o $team_ch -eq 1 -o $cust_ch -eq 1 -o $sfid_ch -eq 1 -o $desc_ch -eq 1 -o $prio_ch -eq 1 ]; then
+			if [ $id_ch -ne 1 ]; then
 				id=${arr[0]}
 			fi
-			if [ $team_ch -eq 1 ]; then
+			if [ $team_ch -ne 1 ]; then
 				team=${arr[1]}
 			fi
-			if [ $cust_ch -eq 1 ]; then
+			if [ $cust_ch -ne 1 ]; then
 				cust=${arr[2]}
 			fi
-			if [ $desc_ch -eq 1 ]; then
-				desc=${arr[3]}
+			if [ $sfid_ch -ne 1 ]; then
+				sfid=${arr[3]}
 			fi
-			if [ $sfid_ch -eq 1 ]; then
-				sfid=${arr[4]}
+			if [ $desc_ch -ne 1 ]; then
+				desc=${arr[4]}
 			fi
-			#if [ $prio_ch -eq 1 ]; then
-			#	prio=${arr[5]}
-			#fi
-			#newfilename="$id""$delim""$team""$delim""$cust""$delim""$sfid""$delim""$desc""$delim""$prio"
-			newfilename="$id""$delim""$team""$delim""$cust""$delim""$desc"
-	    log i $newfilename
+			
+			log t "old data: ${arr[*]}"
+			newfilename="${id}${delim}${team}${delim}${cust}${delim}${sfid}${delim}${desc}"
+			log t "new data: ${id} ${team} ${cust} ${sfid} ${desc}"
+
+	    log i "New name: ${newfilename}"
 			log i "Renaming in progress.."
 			read -p "|  Is it OK? [Y/n] " yn
 			case $yn in
@@ -562,7 +570,7 @@ function f_rename () {
 					# Create new link in ~/Downloads
 					f_create_downloads_link $id
 					log i "Successfully renamed"
-					log "cd $path/$newfilename"
+					log t "$path/$newfilename"
 					;;  
 			esac
 		else
@@ -627,13 +635,13 @@ function f_backtoops() {
 	if [ $nlines -eq 1 ]; then
 		log i "Sending inc $grepped"
 		log i "Waiting for user confirmation."
-		read -p "|  Do you really want to move this incident to $backtoops folder? [y/N] " yn
+		read -p "|  Do you really want to move this incident to $backtoops_path folder? [y/N] " yn
 		case $yn in 
 			[Yy]* )
 				log i "User confirmed, moving $grepped"
-				log "mv $grepped $backtoops"
-				mv $grepped $backtoops
-				log i "Inc moved to $backtoops folder with success"
+				log "mv $grepped $backtoops_path"
+				mv $grepped $backtoops_path
+				log i "Inc moved to $backtoops_path folder with success"
 				;;
 			* )
 				log i "User abort, nothing to be removed"
@@ -660,7 +668,7 @@ function f_done() {
 				return
 				;;
 			* )
-				log i "User confirmed, moving $grepped"
+				log i "User confirmed, moving $grepped to $done_path"
 				log t "mv $grepped $done_path"
 				mv $grepped $done_path
 				log i "Inc moved to $done_path folder with success"
@@ -687,8 +695,8 @@ function f_return() {
 		case $yn in 
 			[Yy]* )
 				log i "User confirmed, moving $grepped"
-				log t "mv $backtoops/$grepped $path"
-				mv $backtoops/$grepped $path
+				log t "mv $backtoops_path/$grepped $path"
+				mv $backtoops_path/$grepped $path
 				log i "Inc moved to $path folder with success"
 				;;
 			* )
@@ -708,13 +716,13 @@ function f_team() {
 	if [ $nlines -eq 1 ]; then
 		log i "Sending inc $grepped"
 		log i "Waiting for user confirmation."
-		read -p "|  Do you really want to move this incident to $team folder? [y/N] " yn
+		read -p "|  Do you really want to move this incident to $team_path folder? [y/N] " yn
 		case $yn in 
 			[Yy]* )
 				log i "User confirmed, moving $grepped"
-				log t "mv $grepped $team"
-				mv $grepped $team 
-				log i "Inc moved to $team folder with success"
+				log t "mv $grepped $team_path"
+				mv $grepped $team_path 
+				log i "Inc moved to $team_path folder with success"
 				;;
 			* )
 				log i "User abort, nothing to be removed"
@@ -829,10 +837,10 @@ function f_args () {
 			log i "[h]  wc -v		... show how many incidents are there while filtering the \$3 out of the result"
 			log i "[h]  log			... show incident management log"
 			log i "[h]  [-M] remove		... delete incident | [M]ove incident to trash"
-			log i "[h]  [-t] team		... move incident to $team folder"
+			log i "[h]  [-t] team		... move incident to $team_path folder"
 			log i "[h]  [-d] done		... move incident to $done_path folder"
-			log i "[h]  [-b][bto] backtops	... move incident to $backtoops folder"
-			log i "[h]  [-u][rti] return 	... move incident back from $backtoops"
+			log i "[h]  [-b][bto] backtops	... move incident to $backtoops_path folder"
+			log i "[h]  [-u][rti] return 	... move incident back from $backtoops_path"
 			log i "[h]  [-r] rename		... rename incident"
 			log i "[h]  [-n] new		... create new incident"
 			log i "[h]  [-l] links		... check soft links"
@@ -904,7 +912,7 @@ function f_ls () {
 				;;
 			"-b" | "-bto" )
 				log i "list back2ops issues"
-				path=$backtoops
+				path=$backtoops_path
 				f_ls_prototype $@
 				path=$def_path/main
 				;;
@@ -932,10 +940,10 @@ function f_ls () {
 			"-24" )
 				if [ "$#" -lt 3 ]; then
 					log i "Listing 24x7 incidents | Emergencies"
-					log t "`ls -Rhlt --color=auto --group-directories-first $path24x7 | grep ^d | egrep "(INC[0-9]{8})"`"
+					log t "`ls -Rhlt --color=auto --group-directories-first $_24x7_path | grep ^d | egrep "(INC[0-9]{8})"`"
 				else 
 					log i "Listing 24x7 incidents | Emergencies with \"grep $3\""
-					log t "`ls -Rhlt --color=auto --group-directories-first $path24x7 | grep ^d | egrep "(INC[0-9]{8})" | grep -i $3`"
+					log t "`ls -Rhlt --color=auto --group-directories-first $_24x7_path | grep ^d | egrep "(INC[0-9]{8})" | grep -i $3`"
 				fi
 				return
 				;;
