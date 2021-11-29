@@ -1,0 +1,23 @@
+#!/bin/bash
+###
+#
+# @Author	  lanthean
+# @Created	  29/11/2021
+# 
+###
+
+echo "--- Compiling inc.sh"
+shc -f inc.sh -o inc
+
+echo "--- Create/Update ~/bin/inc link"
+ln -sf ${PWD}/inc ~/bin/inc
+
+if [[ $(uname) == "Darwin" ]];then
+    ln -sf ${PWD}/bash_completion.d/inc /opt/homebrew/etc/bash_completion.d/
+else
+    ln -sf ${PWD}/bash_completion.d/inc /etc/bash_completion.d/
+fi
+echo "--- compile done"
+
+#EOF
+###

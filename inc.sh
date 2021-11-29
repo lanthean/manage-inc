@@ -8,22 +8,28 @@
 # @Package	~/bin
 #
 ###
-VERSION='2.0.0'
+VERSION='2.0.1'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 ## Static functions
 function f_s_init () {
   # def vars
+	# available LOG_LEVEL values: t,d,i,w,e
 	LOG_LEVEL=i
 
 	user="$(/usr/bin/whoami)"
 	handle='incident (plaintext/markdown/filetree) management'
-	script_name='manage-inc.sh'
+	script_name='inc'
 	EXP_ARGS=1
 	year="$(date +"%Y")"
 	def_path=~/inc
 	path=$def_path/main
-	user_downloads=/Users/lanthean/Downloads
+	
+	if [[ $(uname) == "Darwin" ]];then
+		user_downloads=/Users/$user/Downloads
+	else
+		user_downloads=/home/$user/Downloads
+	fi
 	##
 	# in case decision is made to distribute incident/h2s/jira issues to separate directories ./incidents; ./h2s; ./jira
 	# (at this moment manually created soft links are in place)
@@ -39,20 +45,21 @@ function f_s_init () {
 	id_def="xxxxxx000000xxxxxx"
 	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})"
 	id=$id_def
+	max_lines=47
 	
 	## disable logging [true|false]
 	#LOG_DISABLED=true
 	## 
 
 	LOG_FILE=$def_path/log/incidents.log
-  if [ ! -d /opt/generic_bash_functions ];then
-    echo "/opt/generic_bash_functions not found, attemting to clone from lanthean's github"
+  if [ ! -d /opt/gbf ];then
+    echo "/opt/gbf not found, attemting to clone from lanthean's github"
 	  pushd /opt
-    sudo git clone https://github.com/lanthean/generic_bash_functions.git
+    sudo git clone https://github.com/lanthean/gbf.git
     popd
-    sudo chown -R $USER:staff /opt/generic_bash_functions
+    sudo chown -R $USER:staff /opt/gbf
   fi
-	source /opt/generic_bash_functions/generic_bash_functions
+	source /opt/gbf/generic_bash_functions
 	} 
 function f_s_boc () { 
 	#start with something nice to say
@@ -240,7 +247,7 @@ function f_get_support_cases() {
 			# S="${solution:13:10}[S]"
 			U="${update:10:10}[U]"
 			STATUS="${status:10:14}"
-			PRIORITY="${priority:8:3}"
+			PRIORITY="${priority:8:7}"
 			# log t "workaround: ${W}"
 			# log t "solution: ${S}"
 			# log t "update: ${update}; U: ${U}"
@@ -268,7 +275,7 @@ function f_get_support_cases() {
 		# printf "%-72s %-5s %-2s %-9s %13s %13s %13s\n" "$dir" "--?h" "$PRIORITY" "$STATUS" "$W" "$S" "$U"
 		# log t "$dir $PRIORITY $STATUS $W $S $U"
 		# printf "%-75s %-3s %-10s %13s %13s %13s\n" "$dir" "$PRIORITY" "$STATUS" "$W" "$S" "$U" >> $inc_file
-		printf "%-85s |%-3s |%-11s |%13s\n" "$dir" "$PRIORITY" "$STATUS" "$U" >> $inc_file
+		printf "%-85s |%-7s |%-11s |%13s\n" "$dir" "$PRIORITY" "$STATUS" "$U" >> $inc_file
 	done 
 	}
 function f_get_development_cases() {
@@ -363,13 +370,13 @@ function f_readinp () {
 	## Read user's input
 		team="CUS" #read -p "|	Team (SMSC/CUST): " team
 		read -p "|	Customer: " cust
-	  read -p "|	SF-ID: " sfid
 		read -p "|	Short description of the incident: " desc
 		read -p "|	Priority of the incident: " prio
 		read -p "|	Status of the incident: " stat
+		read -p "|	Contact: " contact
 	  read -p "|	Release: " release
 	  read -p "|	Systems: " systems
-		read -p "|	Contact: " contact
+	  read -p "|	SF-ID: " sfid
 	#id=H2S_CUS-1809
 	#cust=korektel_iq
 	#sfid=S16-25984
@@ -381,28 +388,34 @@ function f_readinp () {
 	#contact="Mohan Pasupathy"
 	} 
 function f_create_downloads_link() {
-	id=$1
-	if [[ $id == *"H2S"* ]];then
+	_id=$1
+	log t "id: ${_id}"
+	if [[ $_id == *"H2S"* ]];then
 		downloads_path="${user_downloads}/h2s"
-		id=${id:4}
+		_id=${_id:4}
+	elif [[ $_id == *"CUS-"* ]];then
+		downloads_path="${user_downloads}/dev"
 	else
 		downloads_path="${user_downloads}/inc"
 	fi
+
+	physical_directory=$(ls ${path} | grep ${_id})
+	log t "id: ${_id}"
+	log t "path: ${path}"
 	log t "downloads path: ${downloads_path}"
-	if [[ -L $downloads_path/$id ]];then
-		log w "Link to ~/Downloads/$id -> $path/$physical_directory/ already exists."
-	elif [[ -d $downloads_path/$id ]];then
+	if [[ -L $downloads_path/$_id ]];then
+		log w "Link to ${downloads_path}/$_id -> $path/$physical_directory/ already exists."
+	elif [[ -d $downloads_path/$_id ]];then
     log w "There is a directory in place of the new link location - reversing"
-    log t "ln -sn $downloads_path/$id $path/$physical_directory/"
-    ln -sn $downloads_path/$id $path/$physical_directory/
+    log t "ln -sn $downloads_path/$_id $path/$physical_directory/"
+    ln -sn $downloads_path/$_id $path/$physical_directory/
 	else
-		physical_directory=$(ls ${path} | grep ${id})
-		log i "Creating link to ${downloads_path}/${id} -> $path/$physical_directory/"
-		log t "ln -sn ${path}/${physical_directory} ${downloads_path}/${id}"
-		ln -sn ${path}/${physical_directory} ${downloads_path}/${id}
+		log i "Creating link to ${downloads_path}/${_id} -> $path/$physical_directory/"
+		log t "ln -sn ${path}/${physical_directory} ${downloads_path}/${_id}"
+		ln -sn ${path}/${physical_directory} ${downloads_path}/${_id}
 		if [ $? != 0 ];then
 			log e "Unknown error: Possibly broken link."
-			log e "Link to ${downloads_path}/${id} -> $path/$physical_directory/ was not created."
+			log e "Link to ${downloads_path}/${_id} -> $path/$physical_directory/ was not created."
 		fi
 	fi
 	}
@@ -431,17 +444,41 @@ function f_update_downloads_link_to_done() {
 	fi
 	}
 function f_remove_downloads_link() {
-	id=$1
-	if [ -L ~/Downloads/inc/${id} ];then
-		log i "Removing link to ~/Downloads/inc/${id}."
-		rm ~/Downloads/inc/${id}
+	_id=$1
+
+	log t "id: ${_id}"
+	if [[ $_id == *"H2S"* ]];then
+		downloads_path="${user_downloads}/h2s"
+		_id=${_id:4}
+	elif [[ $_id == *"CUS-"* ]];then
+		downloads_path="${user_downloads}/dev"
+	else
+		downloads_path="${user_downloads}/inc"
+	fi
+
+	log t "id: ${_id}"
+	log t "path: ${path}"
+	log t "downloads path: ${downloads_path}"
+	if [ -L ${downloads_path}/${_id} ];then
+		log i "Removing link to ${downloads_path}/${_id}."
+		rm ${downloads_path}/${_id}
 		if [ $? != 0 ];then
 			log e "Unknown error: Possibly broken link."
-			log e "Link to ~/Downloads/inc/${id} was not deleted."
+			log e "Link to ${downloads_path}/${_id} was not deleted."
 		fi
 	else
-		log w "Link to ~/Downloads/inc/${id} does not exist."
+		log w "Link to ${downloads_path}/${_id} does not exist."
 	fi
+	# Silently remove possible broken remnants in other paths
+	if [ -L ${user_downloads}/h2s/${_id} ];then
+		rm ${user_downloads}/h2s/${_id} > /dev/null 2>&1 
+	fi		
+	if [ -L ${user_downloads}/dev/${_id} ];then
+		rm ${user_downloads}/dev/${_id} > /dev/null 2>&1 
+	fi		
+	if [ -L ${user_downloads}/inc/${_id} ];then
+		rm ${user_downloads}/inc/${_id} > /dev/null 2>&1 
+	fi		
 	}	
 function f_create_new_inc () { 
 	# New incident
@@ -454,7 +491,8 @@ function f_create_new_inc () {
 	#	team="$delim""$team"
 	#fi
 	# newinc="$id""$delim""$team""$delim""$cust""$delim""$sfid""$delim""$desc""$delim""$prio"
-	newinc="$id""$delim""$team""$delim""$cust""$delim""${desc// /_}"
+	# newinc=${id}${delim}${team}${delim}${cust}${delim}${sfid}${delim}${desc// /_}
+	newinc=${id}${delim}${team}${delim}${cust}${delim}${desc// /_}
 	log i "Waiting for user confirmation of new incident: $newinc"
 	read -p "|	Is it OK? [Y/n] " yn
 	case $yn in
@@ -528,8 +566,8 @@ function f_rename () {
 		log i "[i]d .............. ${arr[0]}"
 		log i "[t]eam ............ ${arr[1]}"
     log i "[c]ustomer name ... ${arr[2]}"
-		log i "[s]f-id ........... ${arr[3]}"
-		log i "[d]escription ..... ${arr[4]}"
+		log i "[d]escription ..... ${arr[3]}"
+		# log i "[s]f-id ........... ${arr[4]}"
 	#	log i "prio	... ${arr[5]}"
 	
 		f_get_rename
@@ -544,16 +582,17 @@ function f_rename () {
 			if [ $cust_ch -ne 1 ]; then
 				cust=${arr[2]}
 			fi
-			if [ $sfid_ch -ne 1 ]; then
-				sfid=${arr[3]}
-			fi
 			if [ $desc_ch -ne 1 ]; then
-				desc=${arr[4]}
+				desc=${arr[3]}
+			fi
+			if [ $sfid_ch -ne 1 ]; then
+				sfid=${arr[4]}
 			fi
 			
 			log t "old data: ${arr[*]}"
-			newfilename="${id}${delim}${team}${delim}${cust}${delim}${sfid}${delim}${desc}"
-			log t "new data: ${id} ${team} ${cust} ${sfid} ${desc}"
+			# newfilename="${id}${delim}${team}${delim}${cust}${delim}${sfid}${delim}${desc}"
+			newfilename="${id}${delim}${team}${delim}${cust}${delim}${desc}"
+			log t "new data: ${id} ${team} ${cust} ${desc} ${sfid}"
 
 	    log i "New name: ${newfilename}"
 			log i "Renaming in progress.."
@@ -565,7 +604,8 @@ function f_rename () {
 					;;  
 				* ) 
 					# Remove old link in ~/Downloads
-					f_remove_downloads_link ${arr[0]}
+					f_remove_downloads_link $id
+					log t "mv $path/$filename $path/$newfilename"
 					`mv $path/$filename $path/$newfilename`
 					# Create new link in ~/Downloads
 					f_create_downloads_link $id
@@ -671,12 +711,17 @@ function f_done() {
 				log i "User confirmed, moving $grepped to $done_path"
 				log t "mv $grepped $done_path"
 				mv $grepped $done_path
-				log i "Inc moved to $done_path folder with success"
-        log i "Update inc link in ${user_downloads}/inc"
-        log t "grepped: ${grepped}"
-        inc_arr=$(f_parse_inc_name $grepped)
-        log t "id: ${inc_arr[0]}"
-        f_update_downloads_link_to_done ${inc_arr[0]}
+				if [[ $? -eq 0 ]];then
+					log i "Inc moved to $done_path folder with success"
+	        log i "Update inc link in ${user_downloads}/inc"
+	        log t "grepped: ${grepped}"
+	        inc_arr=$(f_parse_inc_name $grepped)
+	        log t "id: ${inc_arr[0]}"
+	        f_update_downloads_link_to_done ${inc_arr[0]}
+				else
+					log e "mv ${grepped} ${done_path} failed. Please try manually."
+					log e "mv ${grepped} ${done_path}"
+				fi	
 				;;
 		esac
 	else
@@ -1039,9 +1084,18 @@ function f_ls_prototype () {
 		;;
 	"lh")
 	 	f_get_h2s_cases
-		log i "| Customization H2S \
-					\n$(cat $h2s_file | $lh_sort)"
-    log i "| Number of active #$(wc -l $h2s_file)"
+	 	case_count=$(wc -l $h2s_file | cut -d " " -f 1)
+	 	log t "case_count: ${case_count}"
+	 	log t "h2s_file: ${h2s_file}"
+	 	log t "lh_sort: ${lh_sort}"
+	 	if [[ ${case_count} -gt ${max_lines} ]];then
+			log i "| Customization H2S"
+			cat $h2s_file | $lh_sort | less
+		else
+			log i "| Customization H2S"
+			cat $h2s_file | $lh_sort
+		fi
+    log i "| Number of active #${case_count}"
 		;;
 	* )
 		# Incidents

@@ -1,0 +1,21 @@
+#!/bin/bash
+###
+#
+# @Author	  lanthean
+# @Created	  29/11/2021
+# 
+###
+
+echo "--- Installing prerequisites"
+if [[ $(uname) == "Darwin" ]];then
+    brew install shc
+
+elif [[ $(uname) == *"Ubuntu"* ]];then
+    apt install shc
+else
+    yum -y install shc
+fi
+echo "--- pre done"
+
+#EOF
+###

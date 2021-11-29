@@ -1,0 +1,21 @@
+#!/bin/bash
+###
+#
+# @Author	  lanthean
+# @Created	  29/11/2021
+# 
+###
+
+echo "--- Removing compiled inc"
+rm inc
+rm ~/bin/inc
+echo "--- Installing prerequisites"
+if [[ $(uname) == "Darwin" ]];then
+    rm /opt/homebrew/etc/bash_completion.d/inc
+else
+    rm /etc/bash_completion.d/inc
+fi
+echo "--- clean done"
+
+#EOF
+###
