@@ -1,8 +1,6 @@
 #!/usr/local/bin/bash
 ##
-# @Author	Martin Bortel
-# @Web		http://martinbortel.cz
-# @Email	me@martinbortel.cz
+# @Author		lanthean@protonmail.com
 # @Created	04/05/2012 
 # @Updated	24/09/2020
 # 
@@ -11,7 +9,7 @@
 ###
 
 # def vars
-user='martin'
+user='lanthean'
 handle='creating new incident file with template'
 script_name='newincf'
 EXP_ARGS=1
@@ -22,7 +20,7 @@ EXT=md
 # I will handle $handle for You now.."
 
 
-source /opt/generic_bash_functions/generic_bash_functions
+source /opt/gbf/generic_bash_functions
 
 openfile () {
   # $1 = filename
@@ -103,8 +101,5 @@ else
     echo " --"
 fi
 
-#say good bye
-#echo "# It was my pleasure to serve You Ser.
-### Good bye "
 #EOF
 ###

@@ -107,37 +107,7 @@ function f_get_user_consent() {
 		return
 	fi
 	}
-function f_get_incidents_short() {
-	# docstring
-	#
-	# $1 = arg - desc (type)
-	#
-	# return: 0 - success
-
-	f_ls_prototype li > /dev/null
- 	cut -d "_" -f1 /tmp/inc.manage-inc
-	}
-function f_get_jira_short() {
-	# docstring
-	#
-	# $1 = arg - desc (type)
-	#
-	# return: 0 - success
-
-	f_ls_prototype lj > /dev/null
- 	cut -d "_" -f1 /tmp/jira.manage-inc
-	}
-function f_get_h2s_short() {
-	# docstring
-	#
-	# $1 = arg - desc (type)
-	#
-	# return: 0 - success
-
-	f_ls_prototype lh > /dev/null
- 	cut -d "_" -f1,2 /tmp/h2s.manage-inc
-	}
-function f_get_inc_filter () { 
+function f_get_inc_filter () {
 	if [ "$id" == "$id_def" ]; then
 		# no ID entered in argument, fetch one interactively
 		read -p "|	Please input the incident ID: " id
@@ -152,6 +122,9 @@ function f_get_inc_filter () {
 					;;
 			esac
 		fi	
+	else
+		grepped=$(ls "$path" | grep "$id")
+		nlines=$(ls "$path" | grep "$id" | wc -l)		
 	fi #ID entered as argument?
 	if [ -z "$id" ];then
 		# log should be handled by calling function -> No ID inserted
@@ -364,7 +337,55 @@ function f_get_h2s_cases() {
 		printf "%-85s |%-15s |%13s |%13s\n" "$dir" "$STATUS" "$P" "$U" >>  $h2s_file
 	done
 	}
+function f_get_support_ids() {
+	# docstring
+	#
+	# $1 = arg - desc (type)
+	#
+	# return: 0 - success
 
+	f_ls_prototype li > /dev/null
+ 	cut -d "_" -f1 /tmp/inc.manage-inc
+	}
+function f_get_development_ids() {
+	# docstring
+	#
+	# $1 = arg - desc (type)
+	#
+	# return: 0 - success
+
+	f_ls_prototype lj > /dev/null
+ 	cut -d "_" -f1 /tmp/jira.manage-inc
+	}
+function f_get_h2s_ids() {
+	# docstring
+	#
+	# $1 = arg - desc (type)
+	#
+	# return: 0 - success
+
+	f_ls_prototype lh > /dev/null
+ 	cut -d "_" -f1,2 /tmp/h2s.manage-inc
+	}
+function f_get_id() {
+	# docstring
+	#
+	# $1 = grepped / filename - name of the directory of the case in $path (string)
+	#
+	# return: 0 - success
+	filename=$1
+	if [[ $nlines -gt 1 ]];then
+		log e "f_get_id() - multiple hits"
+		return 1
+	fi
+	arr=$(f_parse_inc_name $filename)
+	log t "f_parse_inc_name() - filename: ${filename}"
+	log t "f_parse_inc_name() - arr: ${arr}"
+	log t "f_get_id() - id: $id (pre)"
+	id=${arr[0]}
+	log t "f_get_id() - id: $id (post)"
+	return 0
+	}
 ## Functions
 function f_readinp () { 
 	## Read user's input
@@ -403,12 +424,14 @@ function f_create_downloads_link() {
 	log t "id: ${_id}"
 	log t "path: ${path}"
 	log t "downloads path: ${downloads_path}"
-	if [[ -L $downloads_path/$_id ]];then
-		log w "Link to ${downloads_path}/$_id -> $path/$physical_directory/ already exists."
-	elif [[ -d $downloads_path/$_id ]];then
+	if [[ -d $downloads_path/$_id ]];then
     log w "There is a directory in place of the new link location - reversing"
     log t "ln -sn $downloads_path/$_id $path/$physical_directory/"
     ln -sn $downloads_path/$_id $path/$physical_directory/
+	elif [[ -L $downloads_path/$_id ]];then
+		log w "There is a link in place, let's update it"
+		log t "ln -sfn ${path}/${physical_directory} ${downloads_path}/${_id}"
+		ln -sfn ${path}/${physical_directory} ${downloads_path}/${_id}
 	else
 		log i "Creating link to ${downloads_path}/${_id} -> $path/$physical_directory/"
 		log t "ln -sn ${path}/${physical_directory} ${downloads_path}/${_id}"
@@ -603,8 +626,6 @@ function f_rename () {
 					return
 					;;  
 				* ) 
-					# Remove old link in ~/Downloads
-					f_remove_downloads_link $id
 					log t "mv $path/$filename $path/$newfilename"
 					`mv $path/$filename $path/$newfilename`
 					# Create new link in ~/Downloads
@@ -636,6 +657,7 @@ function f_remove () {
 	log w "Remove action in progress"
 	f_get_inc_filter
 	if [ $nlines -eq 1 ]; then
+		f_get_id $grepped
 		log w "Removing inc $grepped"
 		log w "Waiting for user confirmation."
 		read -p "|  Do you really want to delete this incident? [y/N/[t]rash] " yn
@@ -646,6 +668,7 @@ function f_remove () {
 				log t "rm -rf ./$grepped"
 				rm -rf $grepped
 				log w "Inc removed with success"
+				f_remove_downloads_link $id
 				;;
 			[Tt]* )
 				log w "Moving inc to trash"
@@ -656,6 +679,7 @@ function f_remove () {
 					mkdir $path/trash
 					mv $grepped $path/trash
 				fi
+				f_remove_downloads_link $id
 				log w "Incident successfully moved to trash"
 				;;
 			* )
@@ -673,6 +697,7 @@ function f_backtoops() {
 	log i "BackToOPS action in progress"
 	f_get_inc_filter
 	if [ $nlines -eq 1 ]; then
+		f_get_id $grepped
 		log i "Sending inc $grepped"
 		log i "Waiting for user confirmation."
 		read -p "|  Do you really want to move this incident to $backtoops_path folder? [y/N] " yn
@@ -784,6 +809,15 @@ function f_team() {
 function f_args () { 
 	log t "\$1=$1"
 	case $1 in
+		"--test" ) #check soft link to ~/Downloads
+			log t "f_args() - --test - \$2: ${2}"
+			if [[ -n $2 ]];then
+				id=$2
+			fi
+			f_get_inc_filter
+			f_get_id $grepped
+			return
+			;;
 		"-dl" | "downloadlink" ) #check soft link to ~/Downloads
 			if [ ! -z "$2" ];then
 				id=$2
@@ -1217,8 +1251,8 @@ function f_id_as_first_argument () {
 	elif [ $nlines -eq 1 ]; then
 		# Incident already exists
 		log w "Case already exists: ${path}/${grepped}"
-		read -p "|	Do you want to [O]pen ${id} or [r]ename it or [n]either? [O/r/n] " ron
-	    case $ron in
+		read -p "|	Do you want to [O]pen ${id} or [r]ename it or [n]either? [O/r/n] " orn
+	    case $orn in
 			[Nn]* ) 
 				log w "User abort"
 				return
@@ -1246,9 +1280,9 @@ function f_id_as_first_argument () {
 ### Main {{
 f_s_init
 if [[ $1 == "--bashcompletion" ]];then
-	f_get_incidents_short
-	f_get_jira_short
-	f_get_h2s_short
+	f_get_support_ids
+	f_get_development_ids
+	f_get_h2s_ids
 	exit 0
 fi
 f_s_boc

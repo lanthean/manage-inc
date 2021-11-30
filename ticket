@@ -1,12 +1,10 @@
-#!/bin/bash
-###
-# @Author	Martin Bortel
-# @Web		http://martinbortel.cz
-# @Email	me@martinbortel.cz
+#!/usr/local/bin/bash
+##
+# @Author		lanthean@protonmail.com
 # @Created	01/07/2013
+# @Updated	24/09/2020
 # 
 # @Package	my_small_bash_scripts
-#
 ###
 
 # def vars
