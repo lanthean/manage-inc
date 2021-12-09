@@ -8,7 +8,7 @@
 # @Package	~/bin
 #
 ###
-VERSION='2.0.1'
+VERSION='2.0.2'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 ## Static functions
@@ -206,28 +206,15 @@ function f_get_support_cases() {
 	for dir in $(ls -t $path | egrep "(^[0-9]{6,})" | egrep -i "$grep");do 
 		W="" S="" U="" STATUS="" PRIORITY=""
 		if [[ $(ls "$path/$dir/" | grep "ticket" | wc -l) -ge 1 ]]; then
-			# workaround=$(cat $path/$dir/ticket.* | grep --text "@Workaround" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused")
-			# workaround=${workaround//[$'\r\n']}
-			# solution=$(cat $path/$dir/ticket.* | grep --text "@Solution" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused|([0-9]{3,6})")
-			# solution=${solution//[$'\r\n']}
 			update=$(cat $path/$dir/ticket.* | grep --text "@Update" | egrep "([0-9]{2,4})/([0-9]{2})/([0-9]{2,4})")
 			update=${update//[$'\r\n']}
 			status=$(cat $path/$dir/ticket.* | grep --text "@Status")
 			status=${status//[$'\r\n']}
 			priority=$(cat $path/$dir/ticket.* | grep --text "@Pri")
 			priority=${priority//[$'\r\n']}
-			# W="${workaround:14:10}[W]"
-			# S="${solution:13:10}[S]"
 			U="${update:10:10}[U]"
 			STATUS="${status:10:14}"
 			PRIORITY="${priority:8:7}"
-			# log t "workaround: ${W}"
-			# log t "solution: ${S}"
-			# log t "update: ${update}; U: ${U}"
-			# log t "status: ${status}"
-			# log t "STATUS: ${STATUS}"
-			# log t "priority: ${priority}"
-			# log t "PRIORITY: ${PRIORITY}"
 		fi
 		if [ "$W" == "[W]" ];then
 			W="n/a[W]"
@@ -243,12 +230,23 @@ function f_get_support_cases() {
 			U="n/a[U]"
 		fi
 
+		arr=( ${dir//$delim/ } )
+
+		_id=${arr[0]}
+		log t "_id=${_id}"
+		_team=${arr[1]}
+		log t "_team=${_team}"
+		_customer=${arr[2]}
+		log t "_customer=${_customer}"
+		_description=${arr[3]}
+		log t "_description=${_description}"
 		##
 		# Table display
-		# printf "%-72s %-5s %-2s %-9s %13s %13s %13s\n" "$dir" "--?h" "$PRIORITY" "$STATUS" "$W" "$S" "$U"
-		# log t "$dir $PRIORITY $STATUS $W $S $U"
-		# printf "%-75s %-3s %-10s %13s %13s %13s\n" "$dir" "$PRIORITY" "$STATUS" "$W" "$S" "$U" >> $inc_file
-		printf "%-85s |%-7s |%-11s |%13s\n" "$dir" "$PRIORITY" "$STATUS" "$U" >> $inc_file
+		if [[ $1 == "todotxt" ]];then
+			printf "%-4s %-8s %3s %-15s %-80s\n" "@inc" "+$_id" "$_team" "$_customer" "$_description">> $inc_file
+		else
+			printf "%-8s | %3s | %-15s | %-80s |%-7s |%-11s |%13s\n" "$_id" "$_team" "$_customer" "$_description" "$PRIORITY" "$STATUS" "$U" >> $inc_file
+		fi
 	done 
 	}
 function f_get_development_cases() {
@@ -262,22 +260,14 @@ function f_get_development_cases() {
 		P="" S="" U="" STATUS=""
 		if [ -f $path/$dir/ticket.* ]; then
 			progress=`cat $path/$dir/ticket.* | grep --text "@Progress" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused"`
-			# workaround=`cat $path/$dir/ticket.* | grep --text "@Workaround" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused"`
 			solution=`cat $path/$dir/ticket.* | grep --text "@Solution" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused|([0-9]{3,6})"`
 			update=`cat $path/$dir/ticket.* | grep --text "@Update" | egrep "([0-9]{2,4})/([0-9]{2})/([0-9]{2,4})"`
 			status=`cat $path/$dir/ticket.* | grep --text "@Status"`
 			P="${progress:13:10}[P]"
-			# W="${workaround:14:10}[W]"
 			S="${solution:13:10}[S]"
 			U="${update:10:10}[U]"
 			STATUS="${status:10:14}"
-
 		fi
-		# if [ "$W" == "[W]" ];then
-		# 	W="n/a[W]"
-		# elif [[ $W == *"paused"* ]];then
-		# 	W="paused[W]"
-		# fi
 		if [ "$S" == "[S]" ];then
 			S="n/a[S]"
 		elif [[ $S == *"paused"* ]];then
@@ -287,18 +277,44 @@ function f_get_development_cases() {
 			U="n/a[U]"
 		fi
 
+		arr=( ${dir//$delim/ } )
+		_id=${arr[0]}
+		log t "_id=${_id}"
+		_team=${arr[1]}
+		log t "_team=${_team}"
+		_customer=${arr[2]}
+		log t "_customer=${_customer}"
+		log t "#arr: ${#arr[@]}; arr[1]: ${arr[1]}, arr[2]: ${arr[2]}, arr[3]: ${arr[3]}, arr[4]: ${arr[4]}, arr[5]: ${arr[5]}, "
+		if [ ${#arr[@]} -gt 4 ];then
+	 		_description=${arr[4]}
+			log t "_description=${_description}"
+		else
+	 		_description=${arr[3]}
+			log t "_description=${_description}"
+		fi
 		##
 		# Table display
-		printf "%-85s |%-15s |%13s |%13s\n" "$dir" "$STATUS" "$S" "$U" >> $jira_file
+		if [[ $1 == "todotxt" ]];then
+			printf "%-4s %-10s %3s %-20s %-80s\n" "@dev" "+$_id" "$_team" "$_customer" "$_description" >> $jira_file
+		else
+			printf "%-8s | %3s | %-20s | %-80s |%-13s |%-13s\n" "$_id" "$_team" "$_customer" "$_description" "$S" "$U" >> $jira_file
+		fi
 	done 
 	}
 function f_get_h2s_cases() {
 	# H2S 
+	log t "f_get_h2s_cases() - \$1=$1; \$2=$2; \$3=$3; "
 	if [ -f $h2s_file ];then
+		log t "f_get_h2s_cases() - recreate ${h2s_file}"
 		rm $h2s_file
 		touch $h2s_file
+	else
+		log t "f_get_h2s_cases() - create ${h2s_file}"
+		touch $h2s_file
 	fi
+	log t "f_get_h2s_cases() - path: ${path}; grep: ${grep}"
 	for dir in `ls -t $path | egrep "(H2S)" | egrep -i "$grep"`;do 
+		log t "dir: ${dir}"
 		P="" S="" U="" STATUS=""
 		if [ -f $path/$dir/ticket.* ]; then
 			progress=`cat $path/$dir/ticket.* | grep --text "@Progress" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused"`
@@ -331,10 +347,30 @@ function f_get_h2s_cases() {
 			U="n/a[U]"
 		fi
 
+		arr=( ${dir//$delim/ } )
+		_id=${arr[0]}
+		log t "_id=${_id}"
+		_team=${arr[1]}
+		log t "_team=${_team}"
+		_customer=${arr[2]}
+		log t "_customer=${_customer}"
+		_description=${arr[3]}
+		log t "_description=${_description}"
+
 		##
 		# Table display
+		if [[ $1 == "todotxt" ]];then
+			printf "%-4s %-8s %3s %-15s %-60s\n" "@h2s" "+$_id" "$_team" "$_customer" "$_description" >> $h2s_file
+		else
+			printf "%-8s | %3s | %-15s | %-60s |%-7s |%-13s |%13s\n" "$_id" "$_team" "$_customer" "$_description" "$STATUS" "$P" "$U" >> $h2s_file
+		fi
 		# printf "%-79s %-10s %13s %13s %13s\n" "$dir" "$STATUS" "$W" "$S" "$U" >>  $h2s_file
-		printf "%-85s |%-15s |%13s |%13s\n" "$dir" "$STATUS" "$P" "$U" >>  $h2s_file
+		# if [[ $1 == "todotxt" ]];then
+		# 	printf "%-3s %-82s %-7s %-11s %13s\n" "@h2s" "+$_id" "$_" >>  $h2s_file
+		# else
+		# 	printf "%-85s |%-15s |%13s |%13s\n" "$dir" "$STATUS" "$P" "$U" >>  $h2s_file
+		# fi
+		log t "f_get_h2s_cases() - eo"
 	done
 	}
 function f_get_support_ids() {
@@ -565,7 +601,7 @@ function f_parse_inc_name() {
   # return array
   filename=$1
 	arr=( ${filename//$delim/ } )
-  echo $arr
+  echo ${arr[*]}
 	}
 function f_rename () { 
 	## Rename Incident folder
@@ -894,7 +930,7 @@ function f_args () {
 			/usr/bin/clear
 			echo $path
 			f_s_boc
-			f_ls_prototype $@
+			f_ls $@
 			return
 			;;
 		"ls" | "lstate" ) #listing function
@@ -965,6 +1001,7 @@ function f_args () {
 
 function f_ls () { 
 	if [ $# -gt $EXP_ARGS ]; then
+		log t "f_ls() - \$2=$2"
 		case $2 in 
 			"-f" )
 				if [ "$#" -lt 3 ];then
@@ -1046,6 +1083,22 @@ function f_ls () {
 				f_ls_prototype $@
 				return
 				;;
+			"--todotxt")
+				log i "Listing in todotxt format"
+				# case $1 in
+				# 	"li" )
+				# 		f_ls_prototype li --todotxt $3
+				# 		;;
+				# 	"ld" )
+				# 		f_ls_prototype ld --todotxt $3
+				# 		;;
+				# 	"lh" )
+				# 		f_ls_prototype lh --todotxt $3
+				# 		;;
+				# esac
+				f_ls_prototype $@
+				return
+				;;
 			*)
 				log i "Listing inc with \"grep $2\""
 				f_ls_prototype $@
@@ -1055,8 +1108,8 @@ function f_ls () {
 	else
 		f_ls_prototype $@
 		#f_ls null #=: BEWARE - LOOP!
-		echo "###"
-		f_wc null
+		# echo "###"
+		# f_wc null
 	
 	fi  
 	} 
@@ -1065,6 +1118,8 @@ function f_ls_prototype () {
 	inc_file=/tmp/inc.manage-inc
 	jira_file=/tmp/jira.manage-inc
 	h2s_file=/tmp/h2s.manage-inc
+	log t "f_ls_prototype() - \$1=$1; \$2=$2; \$3=$3; "
+
 	if [ "$2" == "-bto" -o "$2" == "-b" -o "$2" == "-d" -o "$2" == "--done" ]; then
 		grep=$3
 		if [[ $2 == "-d" ]] || [[ $2 == "--done" ]];then
@@ -1073,79 +1128,87 @@ function f_ls_prototype () {
 		fi
 	elif [[ $2 == "-s" ]];then
 		grep=""
+	elif [[ $2 == "--todotxt" ]];then
+		todotxt="todotxt"
+		if [[ $# > 2 ]];then
+			grep=$3
+		fi
 	else
+		todotxt=""
 		grep=$2
 	fi
-	li_sort="sort -t | -k4,4r -k3,3 -k2,2 -k1,1"
-	lj_sort="sort -t | -k4,4r -k2,2 -k 1,1"
-	lh_sort="sort -t | -k4,4r -k2,2 -k 1,1"
+	li_sort="sort -t | -k7,7r -k6,6 -k5,5 -k1,1 -k2,2"
+	lj_sort="sort -t | -k6,6r -k1,1 -k2,2"
+	lh_sort="sort -t | -k4,4r -k1,1 -k2,2"
+	if [[ $grep != "" ]];then
+		str_search="- search: ${grep}"
+	fi
 	case $1 in
 	"ls")
 		# Incidents
-		f_get_support_cases
+		f_get_support_cases $todotxt
 	 	# JIRA
-	 	f_get_development_cases
+	 	f_get_development_cases $todotxt
 	 	# H2S
-	 	f_get_h2s_cases
-		echo "| Customization Support "
+	 	f_get_h2s_cases $todotxt
+		echo "| Customization Support ${str_search}"
 		cat $inc_file | $li_sort
     log i "| Number of active #$(wc -l $inc_file)"
 
 		echo ""
-		echo "| JIRA issues / Development "
+		echo "| JIRA issues / Development ${str_search}"
 		cat $jira_file | $lj_sort
     log i "| Number of active #$(wc -l $jira_file)"
 
 		echo ""
-		echo "| H2S's"
+		echo "| H2S's  ${str_search}"
 		cat $h2s_file | $lh_sort
     log i "| Number of active #$(wc -l $h2s_file)"
 		;;
 	"li")
-		f_get_support_cases
+		f_get_support_cases $todotxt
 		[[ $2 == "-s" ]] && li_sort="sort -t | $3"
 		log t "$li_sort"
 					# \n$(cat $inc_file | sort --debug -k7.8nr -k7.5nr -k7.2nr -k4 -k 1,1)"
-		log i "| Customization Support ${title_suffix}\
-					\n$(cat $inc_file | $li_sort)"
-    log i "| Number of active #$(wc -l $inc_file)"
+		log i "| Customization Support ${title_suffix}  ${str_search}"
+		cat $inc_file | $li_sort
+	    log i "| Number of active #$(wc -l $inc_file)"
 		;;
 	"lj" | "ld")
-	 	f_get_development_cases
-		log i "| Customization JIRA \
-					\n$(cat $jira_file | $lj_sort)"
-    log i "| Number of active #$(wc -l $jira_file)"
+	 	f_get_development_cases $todotxt
+		log i "| Customization JIRA  ${str_search}"
+		cat $jira_file | $lj_sort
+    	log i "| Number of active #$(wc -l $jira_file)"
 		;;
 	"lh")
-	 	f_get_h2s_cases
+	 	f_get_h2s_cases $todotxt
 	 	case_count=$(wc -l $h2s_file | cut -d " " -f 1)
 	 	log t "case_count: ${case_count}"
 	 	log t "h2s_file: ${h2s_file}"
 	 	log t "lh_sort: ${lh_sort}"
 	 	if [[ ${case_count} -gt ${max_lines} ]];then
-			log i "| Customization H2S"
+			log i "| Customization H2S ${str_search}"
 			cat $h2s_file | $lh_sort | less
 		else
-			log i "| Customization H2S"
+			log i "| Customization H2S ${str_search}"
 			cat $h2s_file | $lh_sort
 		fi
     log i "| Number of active #${case_count}"
 		;;
 	* )
 		# Incidents
-		f_get_support_cases
+		f_get_support_cases $todotxt
 	 	# JIRA
-	 	f_get_development_cases
+	 	f_get_development_cases $todotxt
 	 	# H2S
-	 	f_get_h2s_cases
-		log i "| Customization Support \
-					\n$(cat $inc_file | $li_sort)\
-					\n"
-		log i "| JIRA issues / Development\
-					\n$(cat $jira_file | $lj_sort)\
-					\n"
-		log i "| H2S's\
-					\n$(cat $h2s_file | $lh_sort)"
+	 	f_get_h2s_cases $todotxt
+		log i "| Customization Support  ${str_search}"
+		cat $inc_file | $li_sort
+		log i "| JIRA issues / Development  ${str_search}"
+		cat $jira_file | $lj_sort
+		log i "| H2S's  ${str_search}"
+		cat $h2s_file | $lh_sort
+		f_wc $@
 		;;
 	esac
 	return
