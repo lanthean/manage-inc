@@ -12,7 +12,7 @@ VERSION='2.0.2'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 ## Static functions
-function f_s_init () {
+function f_s_init() {
   # def vars
 	# available LOG_LEVEL values: t,d,i,w,e
 	LOG_LEVEL=i
@@ -61,14 +61,14 @@ function f_s_init () {
   fi
 	source /opt/gbf/generic_bash_functions
 	} 
-function f_s_boc () { 
+function f_s_boc() { 
 	#start with something nice to say
 	#echo "### Welcome $user
 	# I will handle $handle for You now.."
 	echo "###"
 	#echo "#"
 	} 
-function f_s_eoc () { 
+function f_s_eoc() { 
 	#say good bye
 	#echo "# It was my pleasure to serve You Ser.
 	### Good bye "
@@ -78,7 +78,7 @@ function f_s_eoc () {
 	} 
 
 ## getters/setters
-function f_manage_users () { 
+function f_manage_users() { 
 	if [ $user == "martin" ]; then
 		return
 	elif [ $user == "root" ]; then
@@ -199,7 +199,7 @@ function f_get_support_cases() {
 	# Incidents	
 	log t "inc_file: ${inc_file}"
 	log t "grep: ${grep}"
-	if [ -f $inc_file ];then
+	if [ -f $inc_file ] ;then
 		rm $inc_file
 		touch $inc_file
 	fi
@@ -243,7 +243,7 @@ function f_get_support_cases() {
 		##
 		# Table display
 		if [[ $1 == "todotxt" ]];then
-			printf "%-4s %-8s %3s %-15s %-80s\n" "@inc" "+$_id" "$_team" "$_customer" "$_description">> $inc_file
+			printf "%-4s %-8s %3s %-15s %-80s\n" "@inc" "+$_id" "$_team" "$_customer" "$_description" >> $inc_file
 		else
 			printf "%-8s | %3s | %-15s | %-80s |%-7s |%-11s |%13s\n" "$_id" "$_team" "$_customer" "$_description" "$PRIORITY" "$STATUS" "$U" >> $inc_file
 		fi
@@ -373,36 +373,6 @@ function f_get_h2s_cases() {
 		log t "f_get_h2s_cases() - eo"
 	done
 	}
-function f_get_support_ids() {
-	# docstring
-	#
-	# $1 = arg - desc (type)
-	#
-	# return: 0 - success
-
-	f_ls_prototype li > /dev/null
- 	cut -d "_" -f1 /tmp/inc.manage-inc
-	}
-function f_get_development_ids() {
-	# docstring
-	#
-	# $1 = arg - desc (type)
-	#
-	# return: 0 - success
-
-	f_ls_prototype lj > /dev/null
- 	cut -d "_" -f1 /tmp/jira.manage-inc
-	}
-function f_get_h2s_ids() {
-	# docstring
-	#
-	# $1 = arg - desc (type)
-	#
-	# return: 0 - success
-
-	f_ls_prototype lh > /dev/null
- 	cut -d "_" -f1,2 /tmp/h2s.manage-inc
-	}
 function f_get_id() {
 	# docstring
 	#
@@ -423,7 +393,7 @@ function f_get_id() {
 	return 0
 	}
 ## Functions
-function f_readinp () { 
+function f_readinp() { 
 	## Read user's input
 		team="CUS" #read -p "|	Team (SMSC/CUST): " team
 		read -p "|	Customer: " cust
@@ -579,7 +549,7 @@ function f_create_new_inc () {
 
 			# echo "$path/$newinc/ticket" v "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
 			# read -p "Press any key to continue"
-			$HOME/bin/newincf "$path/$newinc/ticket" v "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
+			$HOME/bin/newincf "$path/$newinc/ticket" mvim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
 
 			# f_check_links
 			if [ $? == 0 ]; then
@@ -603,7 +573,7 @@ function f_parse_inc_name() {
 	arr=( ${filename//$delim/ } )
   echo ${arr[*]}
 	}
-function f_rename () { 
+function f_rename() { 
 	## Rename Incident folder
 	id_ch=0; team_ch=0; cust_ch=0; sfid_ch=0; desc_ch=0; prio_ch=0;
 	log t "id: $id"
@@ -842,7 +812,7 @@ function f_team() {
 	fi
 	} 
 
-function f_args () { 
+function f_args() { 
 	log t "\$1=$1"
 	case $1 in
 		"--test" ) #check soft link to ~/Downloads
@@ -999,7 +969,7 @@ function f_args () {
 	esac
 	} 
 
-function f_ls () { 
+function f_ls() { 
 	if [ $# -gt $EXP_ARGS ]; then
 		log t "f_ls() - \$2=$2"
 		case $2 in 
@@ -1113,7 +1083,7 @@ function f_ls () {
 	
 	fi  
 	} 
-function f_ls_prototype () { 
+function f_ls_prototype() { 
 	title_suffix=""
 	inc_file=/tmp/inc.manage-inc
 	jira_file=/tmp/jira.manage-inc
@@ -1213,7 +1183,7 @@ function f_ls_prototype () {
 	esac
 	return
 	} 
-function f_wc () { 
+function f_wc() { 
 	if [ $# -gt $EXP_ARGS ]; then
 		case $2 in
 			"-v")
@@ -1236,7 +1206,7 @@ function f_wc () {
 
 	fi
 	} 
-function f_wc_prototype () { 
+function f_wc_prototype() { 
 
 		log i "Number of CUST incidents in my queue.."
 		log i "	...	`ls $path | egrep "(^[0-9]{6})" | egrep "$3" | wc -l`	...	"
@@ -1302,7 +1272,7 @@ function f_check_links() {
 		log i "nothing to do"
 	fi
 	} 
-function f_id_as_first_argument () {
+function f_id_as_first_argument() {
 	# log "[d] NOARGS"
 	f_get_inc_filter
 	# ls "$path" | grep "$id" > /dev/null 2>&1
@@ -1337,15 +1307,16 @@ function f_id_as_first_argument () {
 		# User input matches multiple hits - finish with error
 		log e "[e] Multiple matches, quitting.."
 	fi #new/[i]rename/[e]multiple hit
-
 	}
 
 ### Main {{
 f_s_init
 if [[ $1 == "--bashcompletion" ]];then
-	f_get_support_ids
-	f_get_development_ids
-	f_get_h2s_ids
+	path_length=$(( ${#path} + 1 ))
+	for d in $(find $path -type d -maxdepth 1); do
+		echo ${d:$path_length} | awk -F$delim '{print $1}'
+	done
+	echo "--todotxt"
 	exit 0
 fi
 f_s_boc

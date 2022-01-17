@@ -35,7 +35,7 @@
 eo:intake}}
 eo:cust-desc}}
 ## [connection] {{
-
+cm %CUSTOMER%
 eo:connection}}
 ## [notes] {{
 ### xxx {{
