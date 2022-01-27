@@ -1,14 +1,22 @@
 #!/usr/local/bin/bash
 ###
-# @Author	Martin Bortel
-# @Web		http://martinbortel.cz
-# @Email	me@martinbortel.cz
-# @Created	04/07/2013
-# 
-# @Package	~/bin
+#                                                                            oo                   
+#                                                                                               
+#           88d8b.d8b. .d8888b. 88d888b. .d8888b. .d8888b. .d8888b.          dP 88d888b. .d8888b. 
+#           88'`88'`88 88'  `88 88'  `88 88'  `88 88'  `88 88ooood8 88888888 88 88'  `88 88'  `"" 
+#           88  88  88 88.  .88 88    88 88.  .88 88.  .88 88.  ...          88 88    88 88.  ... 
+#           dP  dP  dP `88888P8 dP    dP `88888P8 `8888P88 `88888P'          dP dP    dP `88888P' 
+#                                                   .88                                        
+#                                               d8888P                                         
+#           https://textkool.com/en/ascii-art-generator?hl=default&vl=default&font=Nancyj-Fancy&text=manage-inc
 #
+# @Author   lanthean@protonmail.com
+# @Created	04/07/2013
+#
+# @Package  manage-inc
 ###
-VERSION='2.0.2'
+
+VERSION='2.1.0'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 ## Static functions
@@ -24,6 +32,7 @@ function f_s_init() {
 	year="$(date +"%Y")"
 	def_path=~/inc
 	path=$def_path/main
+	VIM=mvim
 	
 	if [[ $(uname) == "Darwin" ]];then
 		user_downloads=/Users/$user/Downloads
@@ -35,7 +44,7 @@ function f_s_init() {
 	# (at this moment manually created soft links are in place)
 	inc_path=$def_path/inc
 	h2s_path=$def_path/h2s
-	jira_path=$def_path/jira
+	jira_path=$def_path/dev
 	done_path=$def_path/done
 	##
 	backtoops_path=$def_path/back2ops
@@ -78,20 +87,6 @@ function f_s_eoc() {
 	} 
 
 ## getters/setters
-function f_manage_users() { 
-	if [ $user == "martin" ]; then
-		return
-	elif [ $user == "root" ]; then
-		user="martin"
-		#path="/data/documents/acision/incidents"
-		return
-	else
-		#LOG_FILE=/home/martin/documents/acision/incidents/log/incidents.log
-		log w "User not martin nor root. "
-		user="martin"
-		return false
-	fi
-	} 
 function f_get_user_consent() {
 	if [[ -z $1 ]];then
 		message="Do You want to continue?"
@@ -111,21 +106,22 @@ function f_get_inc_filter () {
 	if [ "$id" == "$id_def" ]; then
 		# no ID entered in argument, fetch one interactively
 		read -p "|	Please input the incident ID: " id
-		# check if user wants to see INC in back2ops
-		if [ $# -gt 0 ];then
-			case $1 in
-				"-b" | "--backtoops" )
-					path=$backtoops_path
-					;;
-				"-d" | "--done" )
-					path=$done_path
-					;;
-			esac
-		fi	
-	else
-		grepped=$(ls "$path" | grep "$id")
-		nlines=$(ls "$path" | grep "$id" | wc -l)		
-	fi #ID entered as argument?
+	fi
+
+	# check if user wants to see INC in back2ops
+	if [ $# -gt 0 ];then
+		case $1 in
+			"-b" | "--backtoops" )
+				path=$backtoops_path
+				;;
+			"-d" | "--done" )
+				path=$done_path
+				;;
+		esac
+	fi
+
+	grepped=$(ls "$path" | grep "$id")
+	nlines=$(ls "$path" | grep "$id" | wc -l)		
 	if [ -z "$id" ];then
 		# log should be handled by calling function -> No ID inserted
 		grepped=0
@@ -155,6 +151,14 @@ function f_get_rename() {
 			f_get_rename
 			;;
 		[Tt] )
+			read -p "|	Enter new case type ([I]NC, [H]2S, [D]EV): " case_type
+			log t "input case_type: $case_type"
+			f_get_case_type
+			log t "normalized case_type: $case_type"
+			type_ch=1
+			f_get_rename
+			;;
+		[team] )
 			read -p "|	Enter new Team: " team
 			log t "team: $team"
 			team_ch=1
@@ -203,7 +207,7 @@ function f_get_support_cases() {
 		rm $inc_file
 		touch $inc_file
 	fi
-	for dir in $(ls -t $path | egrep "(^[0-9]{6,})" | egrep -i "$grep");do 
+	for dir in $(ls -t $path | grep "${delim}INC${delim}" | egrep -i "$grep");do 
 		W="" S="" U="" STATUS="" PRIORITY=""
 		if [[ $(ls "$path/$dir/" | grep "ticket" | wc -l) -ge 1 ]]; then
 			update=$(cat $path/$dir/ticket.* | grep --text "@Update" | egrep "([0-9]{2,4})/([0-9]{2})/([0-9]{2,4})")
@@ -233,19 +237,22 @@ function f_get_support_cases() {
 		arr=( ${dir//$delim/ } )
 
 		_id=${arr[0]}
+		# f_create_downloads_link $_id
 		log t "_id=${_id}"
-		_team=${arr[1]}
+		_type=${arr[1]}
+		log t "_type=${_type}"
+		_team=${arr[2]}
 		log t "_team=${_team}"
-		_customer=${arr[2]}
+		_customer=${arr[3]}
 		log t "_customer=${_customer}"
-		_description=${arr[3]}
+		_description=${arr[4]}
 		log t "_description=${_description}"
 		##
 		# Table display
 		if [[ $1 == "todotxt" ]];then
-			printf "%-4s %-8s %3s %-15s %-80s\n" "@inc" "+$_id" "$_team" "$_customer" "$_description" >> $inc_file
+			printf "%-4s %-8s %3s %-15s %-80s\n" "@${_type,,}" "+$_id" "$_team" "$_customer" "$_description" >> $inc_file
 		else
-			printf "%-8s | %3s | %-15s | %-80s |%-7s |%-11s |%13s\n" "$_id" "$_team" "$_customer" "$_description" "$PRIORITY" "$STATUS" "$U" >> $inc_file
+			printf "%-8s | %3s | %3s | %-15s | %-80s |%-7s |%-11s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$PRIORITY" "$STATUS" "$U" >> $inc_file
 		fi
 	done 
 	}
@@ -256,13 +263,13 @@ function f_get_development_cases() {
 		touch $jira_file
 	fi
 	# search for "CUS-[0-9]{at least 3 occurences}"
-	for dir in `ls -t $path | egrep "(CUS-[0-9]{3})" | egrep -i "$grep" | grep -v "H2S"`;do 
+	for dir in $(ls -t $path | grep "${delim}DEV${delim}" | egrep -i "$grep" | grep -v "H2S");do 
 		P="" S="" U="" STATUS=""
 		if [ -f $path/$dir/ticket.* ]; then
-			progress=`cat $path/$dir/ticket.* | grep --text "@Progress" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused"`
-			solution=`cat $path/$dir/ticket.* | grep --text "@Solution" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused|([0-9]{3,6})"`
-			update=`cat $path/$dir/ticket.* | grep --text "@Update" | egrep "([0-9]{2,4})/([0-9]{2})/([0-9]{2,4})"`
-			status=`cat $path/$dir/ticket.* | grep --text "@Status"`
+			progress=$(cat $path/$dir/ticket.* | grep --text "@Progress" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused")
+			solution=$(cat $path/$dir/ticket.* | grep --text "@Solution" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused|([0-9]{3,6})")
+			update=$(cat $path/$dir/ticket.* | grep --text "@Update" | egrep "([0-9]{2,4})/([0-9]{2})/([0-9]{2,4})")
+			status=$(cat $path/$dir/ticket.* | grep --text "@Status")
 			P="${progress:13:10}[P]"
 			S="${solution:13:10}[S]"
 			U="${update:10:10}[U]"
@@ -279,25 +286,30 @@ function f_get_development_cases() {
 
 		arr=( ${dir//$delim/ } )
 		_id=${arr[0]}
+		# f_create_downloads_link $_id
 		log t "_id=${_id}"
-		_team=${arr[1]}
+		_type=${arr[1]}
+		log t "_type=${_type}"
+		_team=${arr[2]}
 		log t "_team=${_team}"
-		_customer=${arr[2]}
+		_customer=${arr[3]}
 		log t "_customer=${_customer}"
-		log t "#arr: ${#arr[@]}; arr[1]: ${arr[1]}, arr[2]: ${arr[2]}, arr[3]: ${arr[3]}, arr[4]: ${arr[4]}, arr[5]: ${arr[5]}, "
-		if [ ${#arr[@]} -gt 4 ];then
-	 		_description=${arr[4]}
-			log t "_description=${_description}"
-		else
-	 		_description=${arr[3]}
-			log t "_description=${_description}"
-		fi
+		_description=${arr[4]}
+		log t "_description=${_description}"
+		# log t "#arr: ${#arr[@]}; arr[1]: ${arr[1]}, arr[2]: ${arr[2]}, arr[3]: ${arr[3]}, arr[4]: ${arr[4]}, arr[5]: ${arr[5]}, "
+		# if [ ${#arr[@]} -gt 4 ];then
+	 	# 	_description=${arr[4]}
+		# 	log t "_description=${_description}"
+		# else
+	 	# 	_description=${arr[3]}
+		# 	log t "_description=${_description}"
+		# fi
 		##
 		# Table display
 		if [[ $1 == "todotxt" ]];then
-			printf "%-4s %-10s %3s %-20s %-80s\n" "@dev" "+$_id" "$_team" "$_customer" "$_description" >> $jira_file
+			printf "%-4s %-10s %3s %-20s %-80s\n" "@${_type,,}" "+$_id" "$_team" "$_customer" "$_description" >> $jira_file
 		else
-			printf "%-8s | %3s | %-20s | %-80s |%-13s |%-13s\n" "$_id" "$_team" "$_customer" "$_description" "$S" "$U" >> $jira_file
+			printf "%-8s | %3s | %3s | %-20s | %-80s |%-13s |%-13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$S" "$U" >> $jira_file
 		fi
 	done 
 	}
@@ -313,15 +325,15 @@ function f_get_h2s_cases() {
 		touch $h2s_file
 	fi
 	log t "f_get_h2s_cases() - path: ${path}; grep: ${grep}"
-	for dir in `ls -t $path | egrep "(H2S)" | egrep -i "$grep"`;do 
+	for dir in $(ls -t $path | grep "${delim}H2S${delim}" | egrep -i "$grep");do 
 		log t "dir: ${dir}"
 		P="" S="" U="" STATUS=""
 		if [ -f $path/$dir/ticket.* ]; then
-			progress=`cat $path/$dir/ticket.* | grep --text "@Progress" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused"`
-			# workaround=`cat $path/$dir/ticket.* | grep --text "@Workaround" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused"`
-			# solution=`cat $path/$dir/ticket.* | grep --text "@Solution" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused|([0-9]{3,6})"`
-			update=`cat $path/$dir/ticket.* | grep --text "@Update" | egrep "([0-9]{2,4})/([0-9]{2})/([0-9]{2,4})"`
-			status=`cat $path/$dir/ticket.* | grep --text "@Status"`
+			progress=$(cat $path/$dir/ticket.* | grep --text "@Progress" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused")
+			# workaround=$(cat $path/$dir/ticket.* | grep --text "@Workaround" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused")
+			# solution=$(cat $path/$dir/ticket.* | grep --text "@Solution" | egrep "([0-9]{2})/([0-9]{2})/([0-9]{4})|paused|([0-9]{3,6})")
+			update=$(cat $path/$dir/ticket.* | grep --text "@Update" | egrep "([0-9]{2,4})/([0-9]{2})/([0-9]{2,4})")
+			status=$(cat $path/$dir/ticket.* | grep --text "@Status")
 			P="${progress:13:10}[P]"
 			# W="${workaround:14:10}[W]"
 			# S="${solution:13:10}[S]"
@@ -349,20 +361,30 @@ function f_get_h2s_cases() {
 
 		arr=( ${dir//$delim/ } )
 		_id=${arr[0]}
+		# f_create_downloads_link $_id
 		log t "_id=${_id}"
-		_team=${arr[1]}
+		_type=${arr[1]}
+		log t "_type=${_type}"
+		_team=${arr[2]}
 		log t "_team=${_team}"
-		_customer=${arr[2]}
+		_customer=${arr[3]}
 		log t "_customer=${_customer}"
-		_description=${arr[3]}
-		log t "_description=${_description}"
+		if [ ${#arr[@]} -gt 5 ];then
+	 		_sfid=${arr[4]}
+			log t "_sfid=${_sfid}"
+	 		_description=${arr[5]}
+			log t "_description=${_description}"
+		else
+	 		_description=${arr[4]}
+			log t "_description=${_description}"
+		fi
 
 		##
 		# Table display
 		if [[ $1 == "todotxt" ]];then
-			printf "%-4s %-8s %3s %-15s %-60s\n" "@h2s" "+$_id" "$_team" "$_customer" "$_description" >> $h2s_file
+			printf "%-4s %-9s %3s %-15s %-60s\n" "@${_type,,}" "+$_id" "$_team" "$_customer" "$_description" >> $h2s_file
 		else
-			printf "%-8s | %3s | %-15s | %-60s |%-7s |%-13s |%13s\n" "$_id" "$_team" "$_customer" "$_description" "$STATUS" "$P" "$U" >> $h2s_file
+			printf "%-8s | %3s | %3s | %-15s | %-60s |%-7s |%-13s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$STATUS" "$P" "$U" >> $h2s_file
 		fi
 		# printf "%-79s %-10s %13s %13s %13s\n" "$dir" "$STATUS" "$W" "$S" "$U" >>  $h2s_file
 		# if [[ $1 == "todotxt" ]];then
@@ -392,41 +414,62 @@ function f_get_id() {
 	log t "f_get_id() - id: $id (post)"
 	return 0
 	}
+function f_get_case_type() {
+	# Get (prepare) correct case_type (INC, H2S or DEV)
+	#
+	# return: void
+	case_type=${case_type^^}
+	case $case_type in
+		"H"* )
+			case_type="H2S"
+		;;
+		"D"* )
+			case_type="DEV"
+		;;
+		# "" )
+		# 	[ $id == *"CUS-"* ] && case_type="DEV"
+		# 	[ $id == *"CUS-"* ] || case_type="INC"
+		# ;;
+		* )
+			case_type="INC"
+		;;
+	esac
+	}
 ## Functions
 function f_readinp() { 
 	## Read user's input
-		team="CUS" #read -p "|	Team (SMSC/CUST): " team
-		read -p "|	Customer: " cust
-		read -p "|	Short description of the incident: " desc
-		read -p "|	Priority of the incident: " prio
-		read -p "|	Status of the incident: " stat
-		read -p "|	Contact: " contact
-	  read -p "|	Release: " release
-	  read -p "|	Systems: " systems
-	  read -p "|	SF-ID: " sfid
-	#id=H2S_CUS-1809
-	#cust=korektel_iq
-	#sfid=S16-25984
-	#desc=MCO-SOP
-	#prio=B
-	#stat=NEW
-	#release=
-	#systems=
-	#contact="Mohan Pasupathy"
+	case_type="INC"
+	team="CUS" #read -p "|	Team (SMSC/CUST): " team
+	read -p "| 	Type ([Ii]NC, [Hh]2S, [Dd]EV) [default = INC]: " case_type
+	read -p "|	Customer [${cust}]: " _cust
+	read -p "|	Short description of the incident [${desc}]: " _desc
+	read -p "|	Priority of the incident [${prio}]: " _prio
+	read -p "|	Status of the incident [${stat}]: " _stat
+	read -p "|	Contact: " contact
+	read -p "|	Release: " release
+	read -p "|	Systems: " systems
+	read -p "|	SF-ID: " sfid
+
+	[ "$_cust" != "" ] &&  cust=$_cust
+	[ "$_desc" != "" ] &&  desc=$_desc
+	[ "$_prio" != "" ] &&  prio=$_prio
+	[ "$_stat" != "" ] &&  stat=$_stat
+
+	# Set proper case_type from input
+	f_get_case_type
 	} 
 function f_create_downloads_link() {
 	_id=$1
 	log t "id: ${_id}"
-	if [[ $_id == *"H2S"* ]];then
+
+	physical_directory=$(ls ${path} | grep ${_id})
+	if [[ $physical_directory == *"${delim}H2S${delim}"* ]];then
 		downloads_path="${user_downloads}/h2s"
-		_id=${_id:4}
-	elif [[ $_id == *"CUS-"* ]];then
+	elif [[ $physical_directory == *$"${delim}DEV${delim}"* ]];then
 		downloads_path="${user_downloads}/dev"
 	else
 		downloads_path="${user_downloads}/inc"
 	fi
-
-	physical_directory=$(ls ${path} | grep ${_id})
 	log t "id: ${_id}"
 	log t "path: ${path}"
 	log t "downloads path: ${downloads_path}"
@@ -513,15 +556,36 @@ function f_create_new_inc () {
 	# New incident
 	# Let's create a new incident
 	log i "Creating new incident"
+	
+	OIFS=$IFS
+	if [[ $id =~ ^[0-9]{6}$ ]];then
+		heat=$(~/bin/ops -i4b $id)
+		if [[ $heat != "404" ]];then
+			#
+			# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
+			# - returns "404" in case no incident owned by Customization Support team matched ${id}
+			# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
+
+			IFS="|" read -a arr_heat <<< "$heat"
+			IFS=$OIFS
+
+			prio=${arr_heat[1]}
+			stat=${arr_heat[2]}
+			cust=${arr_heat[3]}
+			desc=${arr_heat[6]}
+			rec_id=${arr_heat[7]}
+
+			echo "HEAT URI: "
+			echo "http://mavenir.saasit.com//Login.aspx?Scope=ObjectWorkspace&CommandId=Search&ObjectType=Incident%23&CommandData=RecId,%3D,0,${rec_id},string,AND|#"
+		else
+			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
+			log e "Case: ${id} does not exist in HEAT."
+			return
+		fi
+	fi
 	f_readinp
-	#if [ $team == "" ]; then
-	#	team="CUST"
-	#else
-	#	team="$delim""$team"
-	#fi
-	# newinc="$id""$delim""$team""$delim""$cust""$delim""$sfid""$delim""$desc""$delim""$prio"
-	# newinc=${id}${delim}${team}${delim}${cust}${delim}${sfid}${delim}${desc// /_}
-	newinc=${id}${delim}${team}${delim}${cust}${delim}${desc// /_}
+
+	newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust}${delim}${desc// /_}
 	log i "Waiting for user confirmation of new incident: $newinc"
 	read -p "|	Is it OK? [Y/n] " yn
 	case $yn in
@@ -531,13 +595,13 @@ function f_create_new_inc () {
 			;;
 		* )
 			# echo "case f_create_new_inc"
-			`mkdir $path/$newinc`
+			$(mkdir $path/$newinc)
 			log t "mkdir ${path}/${newinc}"
 			
-			DATE=`date +%Y\\\/%m\\\/%d` # fucking sed - escaped for sed parsing onwards
+			DATE=$(date +%Y\\\/%m\\\/%d) # fucking sed - escaped for sed parsing onwards
 			UPDATE=${DATE}
-			STATUS=${stat}
-			PRI=${prio}
+			STATUS=${stat^^}
+			PRI=${prio^^}
 			ID=${id}
 			SFID=${sfid}
 			TOPIC=${desc}
@@ -575,7 +639,7 @@ function f_parse_inc_name() {
 	}
 function f_rename() { 
 	## Rename Incident folder
-	id_ch=0; team_ch=0; cust_ch=0; sfid_ch=0; desc_ch=0; prio_ch=0;
+	id_ch=0; type_ch=0; team_ch=0; cust_ch=0; sfid_ch=0; desc_ch=0; prio_ch=0;
 	log t "id: $id"
 	f_get_inc_filter
 	if [ "$nlines" -gt 1 ]; then
@@ -593,35 +657,39 @@ function f_rename() {
 		filename=$(ls $path | grep $id)
 		arr=( ${filename//$delim/ } )
 		log i "[i]d .............. ${arr[0]}"
-		log i "[t]eam ............ ${arr[1]}"
-    log i "[c]ustomer name ... ${arr[2]}"
-		log i "[d]escription ..... ${arr[3]}"
+		log i "[t]type ........... ${arr[1]}"
+		log i "[team] ............ ${arr[2]}"
+    	log i "[c]ustomer name ... ${arr[3]}"
+		log i "[d]escription ..... ${arr[4]}"
 		# log i "[s]f-id ........... ${arr[4]}"
 	#	log i "prio	... ${arr[5]}"
 	
 		f_get_rename
 
-		if [ $id_ch -eq 1 -o $team_ch -eq 1 -o $cust_ch -eq 1 -o $sfid_ch -eq 1 -o $desc_ch -eq 1 -o $prio_ch -eq 1 ]; then
+		if [ $id_ch -eq 1 -o $type_ch -eq 1 -o $team_ch -eq 1 -o $cust_ch -eq 1 -o $sfid_ch -eq 1 -o $desc_ch -eq 1 -o $prio_ch -eq 1 ]; then
 			if [ $id_ch -ne 1 ]; then
 				id=${arr[0]}
 			fi
+			if [ $type_ch -ne 1 ]; then
+				case_type=${arr[1]}
+			fi
 			if [ $team_ch -ne 1 ]; then
-				team=${arr[1]}
+				team=${arr[2]}
 			fi
 			if [ $cust_ch -ne 1 ]; then
-				cust=${arr[2]}
+				cust=${arr[3]}
 			fi
 			if [ $desc_ch -ne 1 ]; then
-				desc=${arr[3]}
+				desc=${arr[4]}
 			fi
 			if [ $sfid_ch -ne 1 ]; then
-				sfid=${arr[4]}
+				sfid=${arr[5]}
 			fi
 			
 			log t "old data: ${arr[*]}"
 			# newfilename="${id}${delim}${team}${delim}${cust}${delim}${sfid}${delim}${desc}"
-			newfilename="${id}${delim}${team}${delim}${cust}${delim}${desc}"
-			log t "new data: ${id} ${team} ${cust} ${desc} ${sfid}"
+			newfilename="${id}${delim}${case_type}${delim}${team}${delim}${cust}${delim}${desc}"
+			log t "new data: ${id} ${case_type} ${team} ${cust} ${desc} ${sfid}"
 
 	    log i "New name: ${newfilename}"
 			log i "Renaming in progress.."
@@ -633,7 +701,7 @@ function f_rename() {
 					;;  
 				* ) 
 					log t "mv $path/$filename $path/$newfilename"
-					`mv $path/$filename $path/$newfilename`
+					$(mv $path/$filename $path/$newfilename)
 					# Create new link in ~/Downloads
 					f_create_downloads_link $id
 					log i "Successfully renamed"
@@ -651,7 +719,7 @@ function f_open() {
 	else
 		log t "Opening $path/$grepped/ticket.*"
 		if [[ $(ls "$path/$grepped/" | grep "ticket" | wc -l) -ge 1 ]];then
-			vim $path/$grepped/ticket.*
+			${VIM} $path/$grepped/ticket.*
 		else
 			log e "There is no ticket.{ntx,txt,md} in ${path}/${grepped}"
 		fi
@@ -670,7 +738,7 @@ function f_remove () {
 		case $yn in 
 			[Yy]* )
 				log w "User confirmed, deleting $grepped"
-				log t "`pwd`"
+				log t "$(pwd)"
 				log t "rm -rf ./$grepped"
 				rm -rf $grepped
 				log w "Inc removed with success"
@@ -946,8 +1014,8 @@ function f_args() {
 			return
 			;;
 		"-v" | "--version" | "version" | "copyright")
-			log i "Version: `echo $VERSION`"
-			log i "(c) `echo $COPYRIGHT`"
+			log i "Version: ${VERSION}"
+			log i "(c) ${COPYRIGHT}"
 			return
 			;;
 		$(awk '{a=0}/[0-9]{4,}/{a=1}a' <<<$1) | $(awk '{a=0}/C[A-Z][A-Z]-[0-9]{3,}/{a=1}a' <<<$1))
@@ -960,7 +1028,7 @@ function f_args() {
 		"." )
 			fl_ticket=$(ls . | grep ticket)
 			log i "Opening $fl_ticket"
-			vim ./$fl_ticket
+			${VIM} ./$fl_ticket
 			;;
 		* )
 			log e "Wrong argument \"$1\", quitting.. to see help use --help or -h"
@@ -976,25 +1044,25 @@ function f_ls() {
 			"-f" )
 				if [ "$#" -lt 3 ];then
 					log i "full path"
-					log t "`ls -dhlt -1 $path/** --color=auto | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})"`"
+					log t "$(ls -dhlt -1 $path/** --color=auto | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})")"
 				else
 					log i "full path with grep -i $3"
-					log t "`ls -dhlt -1 $path/** --color=auto | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})" | grep -i $3`"
+					log t "$(ls -dhlt -1 $path/** --color=auto | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})" | grep -i $3)"
 				fi
 				;;
 			"-v" )
 				log i "grep -vi $3"
-				log t "`ls -hlt $path --color=auto --group-directories-first | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})" | grep -vi $3`"
+				log t "$(ls -hlt $path --color=auto --group-directories-first | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})" | grep -vi $3)"
 				;;
 			"-I" )
 				log i "grep case sensitive $3"
-				#log -c "`ls -hlt $path --color=auto --group-directories-first | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})" | egrep "$3"`"
+				#log -c "$(ls -hlt $path --color=auto --group-directories-first | grep -v ^l | grep ^d | egrep "(INC[0-9]{8})" | egrep "$3")"
 				f_ls_prototype $@
 				echo
 				;;
 			"-n" )
 				log i "crosscheck with ARS|Nikita"
-				log t "`ls -hl $path --color=auto --group-directories-first | grep -v ^l | grep ^d | egrep "(H2S_CUS-[0-9]{4})"`"
+				log t "$(ls -hl $path --color=auto --group-directories-first | grep -v ^l | grep ^d | egrep "(H2S_CUS-[0-9]{4})")"
 				;;
 			"-b" | "-bto" )
 				log i "list back2ops issues"
@@ -1016,20 +1084,20 @@ function f_ls() {
 				PRgrep="___PR[0-9]{6}|___JIRA-[0-9]{1,5}"
 				if [ "$#" -lt 3 ];then
 					log i "Listing PRs"
-					log t "`ls -hlt --color=auto --group-directories-first $path | grep ^d | egrep "(INC[0-9]{8})" | egrep $(PRgrep)`"
+					log t "$(ls -hlt --color=auto --group-directories-first $path | grep ^d | egrep "(INC[0-9]{8})" | egrep $(PRgrep))"
 				else 
 					log i "Listing pr with \"grep $3\""
-					log t "`ls -hlt --color=auto --group-directories-first $path | grep ^d | egrep "(INC[0-9]{8})" | egrep $(PRgrep) | grep -i $3`"
+					log t "$(ls -hlt --color=auto --group-directories-first $path | grep ^d | egrep "(INC[0-9]{8})" | egrep $(PRgrep) | grep -i $3)"
 				fi
 				return
 				;;
 			"-24" )
 				if [ "$#" -lt 3 ]; then
 					log i "Listing 24x7 incidents | Emergencies"
-					log t "`ls -Rhlt --color=auto --group-directories-first $_24x7_path | grep ^d | egrep "(INC[0-9]{8})"`"
+					log t "$(ls -Rhlt --color=auto --group-directories-first $_24x7_path | grep ^d | egrep "(INC[0-9]{8})")"
 				else 
 					log i "Listing 24x7 incidents | Emergencies with \"grep $3\""
-					log t "`ls -Rhlt --color=auto --group-directories-first $_24x7_path | grep ^d | egrep "(INC[0-9]{8})" | grep -i $3`"
+					log t "$(ls -Rhlt --color=auto --group-directories-first $_24x7_path | grep ^d | egrep "(INC[0-9]{8})" | grep -i $3)"
 				fi
 				return
 				;;
@@ -1107,9 +1175,9 @@ function f_ls_prototype() {
 		todotxt=""
 		grep=$2
 	fi
-	li_sort="sort -t | -k7,7r -k6,6 -k5,5 -k1,1 -k2,2"
-	lj_sort="sort -t | -k6,6r -k1,1 -k2,2"
-	lh_sort="sort -t | -k4,4r -k1,1 -k2,2"
+	li_sort="sort -t | -k8,8r -k7,7 -k6,6 -k1,1 -k3,3"
+	lj_sort="sort -t | -k7,7r -k1,1 -k3,3"
+	lh_sort="sort -t | -k8,8r -k1,1 -k3,3"
 	if [[ $grep != "" ]];then
 		str_search="- search: ${grep}"
 	fi
@@ -1188,16 +1256,16 @@ function f_wc() {
 		case $2 in
 			"-v")
 				log i "Linecount with \"grep -vi $3\""
-				log i "	...	 `ls $path | egrep $INC_MATCH | grep -vi $3 | wc -l`	...	"
+				log i "	...	 $(ls $path | egrep $INC_MATCH | grep -vi $3 | wc -l)	...	"
 				;;
 			"-I")
 				log i "Linecount of $3"
-				log i "	...	 `ls $path | egrep $INC_MATCH | egrep "$3" | wc -l`	...	"
+				log i "	...	 $(ls $path | egrep $INC_MATCH | egrep "$3" | wc -l)	...	"
 				echo
 				;;
 			*)
 				log i "Linecount with \"grep $2\""
-				log i "	...	 `ls $path | egrep $INC_MATCH | grep $2 | wc -l`	...	"
+				log i "	...	 $(ls $path | egrep $INC_MATCH | grep $2 | wc -l)	...	"
 				;;
 		esac
 	else
@@ -1209,57 +1277,45 @@ function f_wc() {
 function f_wc_prototype() { 
 
 		log i "Number of CUST incidents in my queue.."
-		log i "	...	`ls $path | egrep "(^[0-9]{6})" | egrep "$3" | wc -l`	...	"
+		log i "	...	$(ls $path | egrep "(^[0-9]{6})" | egrep "$3" | wc -l)	...	"
 	
 		log i "Number of JIRA issues / Development in queue.."
-		log i "	...	`ls $path | egrep "(CUS-[0-9]{3})" | egrep "$3" | grep -v "H2S" | wc -l`	...	"
+		log i "	...	$(ls $path | egrep "(CUS-[0-9]{3})" | egrep "$3" | grep -v "H2S" | wc -l)	...	"
 
 		log i "Number of H2S in my queue.."
-		log i "	...	`ls $path | egrep "(H2S)" | egrep "$3" | wc -l`	...	"
+		log i "	...	$(ls $path | egrep "(H2S)" | egrep "$3" | wc -l)	...	"
 	
 		log i "Number of SMSC incidents in my queue.."
-		log i "	...	`ls $path | egrep "(INC[0-9]{7}"$delim"SMSC)|(CS[0-9]{7}"$delim"SMSC)" | egrep "$3" | wc -l`	...	"
+		log i "	...	$(ls $path | egrep "(INC[0-9]{7}"$delim"SMSC)|(CS[0-9]{7}"$delim"SMSC)" | egrep "$3" | wc -l)	...	"
 	} 
 
 function f_check_links() { 
 	EMPTY_OUTPUT=true
 	for dirname in $(ls $path);do
-		if [[ $dirname == "H2S"* ]];then
+		if [[ $dirname == *"H2S"* ]];then
 			if [[ ! -d $h2s_path/$dirname ]];then
 			  EMPTY_OUTPUT=false
-				if [[ -L $h2s_path/$dirname ]];then
-					echo $h2s_path/$dirname
-					rm $h2s_path/$dirname
-				fi
-				ln -s $path/$dirname $h2s_path/$dirname
+				ln -sfn $path/$dirname $h2s_path/$dirname
 				if [[ $? == 0 ]];then
 					log i "link for $dirname successfully created"
 				else
 					log e "link for $dirname was not created"
 				fi
 			fi
-		elif [[ $dirname == "INC"* ]];then
+		elif [[ $dirname == *"INC"* ]];then
 			if [[ ! -d $inc_path/$dirname ]];then
 			  EMPTY_OUTPUT=false
-				if [[ -L $inc_path/$dirname ]];then
-					echo $inc_path/$dirname
-					rm $inc_path/$dirname
-				fi
-				ln -s $path/$dirname $inc_path/$dirname
+				ln -sfn $path/$dirname $inc_path/$dirname
 				if [[ $? == 0 ]];then
 					log i "link for $dirname successfully created"
 				else
 					log e "link for $dirname was not created"
 				fi
 			fi
-		elif [[ $dirname == "CUS"* ]];then
+		elif [[ $dirname == *"DEV"* ]];then
 			if [[ ! -d $jira_path/$dirname ]];then
 			  EMPTY_OUTPUT=false
-				if [[ -L $jira_path/$dirname ]];then
-					echo $jira_path/$dirname
-					rm $jira_path/$dirname
-				fi
-				ln -s $path/$dirname $jira_path/$dirname
+				ln -sfn $path/$dirname $jira_path/$dirname
 				if [[ $? == 0 ]];then
 					echo "[i] link for $dirname successfully created"
 				else
@@ -1273,8 +1329,20 @@ function f_check_links() {
 	fi
 	} 
 function f_id_as_first_argument() {
+	case_done=0; case_back2ops=0;
 	# log "[d] NOARGS"
 	f_get_inc_filter
+	if [ $nlines -eq 0 ]; then
+		f_get_inc_filter -d
+		if [ $nlines -eq 0 ]; then
+			f_get_inc_filter -b
+			if [ $nlines -ne 0 ]; then
+				case_back2ops=1
+			fi
+		else
+			case_done=1
+		fi
+	fi
 	# ls "$path" | grep "$id" > /dev/null 2>&1
 
 	if [ $nlines -eq 0 ]; then
@@ -1283,11 +1351,19 @@ function f_id_as_first_argument() {
 		f_create_new_inc
 	elif [ $nlines -eq 1 ]; then
 		# Incident already exists
-		log w "Case already exists: ${path}/${grepped}"
+		if [ $case_done -eq 1 ];then
+			path=$done_path
+			log w "Case is in DONE: \n${path}/${grepped}"
+		elif [ $case_back2ops -eq 1 ];then
+			path=$backtoops_path
+			log w "Case is in BACK TO OPS: \n${path}/${grepped}"
+		else
+			log w "Case already exists: \n${path}/${grepped}"
+		fi
 		read -p "|	Do you want to [O]pen ${id} or [r]ename it or [n]either? [O/r/n] " orn
 	    case $orn in
 			[Nn]* ) 
-				log w "User abort"
+				log i "User abort"
 				return
 				;;
 			[Rr]* ) 
@@ -1307,6 +1383,7 @@ function f_id_as_first_argument() {
 		# User input matches multiple hits - finish with error
 		log e "[e] Multiple matches, quitting.."
 	fi #new/[i]rename/[e]multiple hit
+	path=$def_path
 	}
 
 ### Main {{
