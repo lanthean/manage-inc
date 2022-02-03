@@ -20,6 +20,10 @@
 # RN - Release Notes
 
 ```
+04/02/2022  -- Version 2.2.0
+            -- Integration with TODOTXT+
+            -- +function f_get_status and f_set_status - to set new status via arg "-s|--set-status"
+
 26/01/2022  -- Version 2.1.0
             -- Integration with HEAT API - gather information and provide it to the user, while creating new incident
 
