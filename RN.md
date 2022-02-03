@@ -20,7 +20,10 @@
 # RN - Release Notes
 
 ```
-04/02/2022  -- Version 2.2.0
+03/02/2022  -- Version 2.2.1
+            -- Integration with JIRA
+
+03/02/2022  -- Version 2.2.0
             -- Integration with TODOTXT+
             -- +function f_get_status and f_set_status - to set new status via arg "-s|--set-status"
 

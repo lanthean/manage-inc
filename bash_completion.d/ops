@@ -1,0 +1,15 @@
+_ops()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    ls_opts=$(inc --bashcompletion ops)
+    opts="$ls_opts"
+    if [[ ${cur} == * ]]; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    fi
+}
+
+complete -o nospace -F _ops ops

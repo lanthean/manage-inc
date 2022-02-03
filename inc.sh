@@ -17,7 +17,7 @@
 ###
 
 timer_start=$(date +"%s%N")
-VERSION='2.2.0'
+VERSION='2.2.1'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 ## Static functions
@@ -40,7 +40,6 @@ function f_s_init() {
 	VIM=mvim
 
 	TODOTXT_FILE="${HOME}/Dropbox/Apps/Todotxt+/work.todo"
-	TODOTXT_PROJECT="inc"
 	TODOTXT_DUE_DATE=$(date "+%F")
 
 	# Support case STATUS:
@@ -361,7 +360,7 @@ function f_get_h2s_cases() {
 			# W="${workaround:14:10}[W]"
 			# S="${solution:13:10}[S]"
 			U="${update:10:10}[U]"
-			STATUS="${status:10:14}"
+			STATUS="${status:10:19}"
 		fi
 		if [ "$P" == "[P]" ];then
 			P="n/a[P]"
@@ -407,7 +406,7 @@ function f_get_h2s_cases() {
 		if [[ $1 == "todotxt" ]];then
 			printf "%-4s %-9s %3s %-15s %-60s\n" "@${_type,,}" "+$_id" "$_team" "$_customer" "$_description" >> $h2s_file
 		else
-			printf "%-8s | %3s | %3s | %-15s | %-60s |%-7s |%-13s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${STATUS^^}" "$P" "$U" >> $h2s_file
+			printf "%-8s | %3s | %3s | %-15s | %-60s |%-20s |%-13s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${STATUS^^}" "$P" "$U" >> $h2s_file
 		fi
 		# printf "%-79s %-10s %13s %13s %13s\n" "$dir" "$STATUS" "$W" "$S" "$U" >>  $h2s_file
 		# if [[ $1 == "todotxt" ]];then
@@ -521,12 +520,13 @@ function f_readinp() {
 	read -p "|	Contact: " contact
 	read -p "|	Release: " release
 	read -p "|	Systems: " systems
-	read -p "|	SF-ID: " sfid
+	read -p "|	SF-ID [${sfid}]: " _sfid
 
 	[ "$_cust" != "" ] &&  cust=$_cust
 	[ "$_desc" != "" ] &&  desc=$_desc
 	[ "$_prio" != "" ] &&  prio=$_prio
 	[ "$_stat" != "" ] &&  stat=$_stat
+	[ "$_sfid" != "" ] &&  sfid=$_sfid
 
 	# Set proper case_type from input
 	f_get_case_type
@@ -653,9 +653,37 @@ function f_create_new_inc () {
 		else
 			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
 			log e "Case: ${id} does not exist in HEAT."
-			return
+			f_get_user_consent "Do you want to override?"
+		fi
+	elif [[ $id =~ ^CUS-[0-9]{4}$ ]];then
+		jira_res=$(~/bin/h2s -i4b $id)
+		if [[ $jira_res != "404" ]];then
+			#
+			# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
+			# - returns "404" in case no incident owned by Customization Support team matched ${id}
+			# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
+
+			IFS="|" read -a arr_jira <<< "$jira_res"
+			IFS=$OIFS
+
+			prio=${arr_jira[1]}
+			stat=${arr_jira[2]}
+			cust=${arr_jira[3]}
+			sfid=${arr_jira[4]}
+			desc=${arr_jira[5]}
+			rec_id=${arr_jira[0]}
+			# echo "$rec_id $prio $stat $cust $desc"
+
+			echo "JIRA URI: "
+			echo "https://at.mavenir.com/jira/browse/${rec_id}"
+		else
+			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
+			log e "Case: ${id} does not exist in JIRA."
+			f_get_user_consent "Do you want to override?"
 		fi
 	fi
+	f_get_user_consent
+
 	f_readinp
 
 	newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust}${delim}${desc// /_}
@@ -1274,9 +1302,9 @@ function f_ls_prototype() {
 		todotxt=""
 		grep=$2
 	fi
-	li_sort="sort -t | -k8,8r -k7,7 -k6,6 -k1,1 -k3,3"
-	lj_sort="sort -t | -k7,7r -k1,1 -k3,3"
-	lh_sort="sort -t | -k8,8r -k1,1 -k3,3"
+	li_sort="sort -t | -k8,8 -k7,7 -k6,6 -k1,1 -k3,3"
+	lj_sort="sort -t | -k7,7 -k1,1 -k3,3"
+	lh_sort="sort -t | -k8,8 -k1,1 -k3,3"
 	if [[ $grep != "" ]];then
 		str_search="- search: ${grep}"
 	fi
@@ -1290,32 +1318,32 @@ function f_ls_prototype() {
 	 	f_get_h2s_cases $todotxt
 		echo "| Customization Support ${str_search}"
 		cat $inc_file | $li_sort
-    log i "| Number of active #$(wc -l $inc_file)"
+    log i "Number of active #$(wc -l $inc_file)"
 
 		echo ""
 		echo "| JIRA issues / Development ${str_search}"
 		cat $jira_file | $lj_sort
-    log i "| Number of active #$(wc -l $jira_file)"
+    log i "Number of active #$(wc -l $jira_file)"
 
 		echo ""
 		echo "| H2S's  ${str_search}"
 		cat $h2s_file | $lh_sort
-    log i "| Number of active #$(wc -l $h2s_file)"
+    log i "Number of active #$(wc -l $h2s_file)"
 		;;
 	"li")
 		f_get_support_cases $todotxt
 		[[ $2 == "-s" ]] && li_sort="sort -t | $3"
 		log t "$li_sort"
 					# \n$(cat $inc_file | sort --debug -k7.8nr -k7.5nr -k7.2nr -k4 -k 1,1)"
-		log i "| Customization Support ${title_suffix}  ${str_search}"
+		log i "Customization Support ${title_suffix}  ${str_search}"
 		cat $inc_file | $li_sort
-	    log i "| Number of active #$(wc -l $inc_file)"
+	    log i "Number of active #$(wc -l $inc_file)"
 		;;
 	"lj" | "ld")
 	 	f_get_development_cases $todotxt
-		log i "| Customization JIRA  ${str_search}"
+		log i "Customization JIRA  ${str_search}"
 		cat $jira_file | $lj_sort
-    	log i "| Number of active #$(wc -l $jira_file)"
+    	log i "Number of active #$(wc -l $jira_file)"
 		;;
 	"lh")
 	 	f_get_h2s_cases $todotxt
@@ -1324,13 +1352,13 @@ function f_ls_prototype() {
 	 	log t "h2s_file: ${h2s_file}"
 	 	log t "lh_sort: ${lh_sort}"
 	 	if [[ ${case_count} -gt ${max_lines} ]];then
-			log i "| Customization H2S ${str_search}"
+			log i "Customization H2S ${str_search}"
 			cat $h2s_file | $lh_sort | more
 		else
-			log i "| Customization H2S ${str_search}"
+			log i "Customization H2S ${str_search}"
 			cat $h2s_file | $lh_sort
 		fi
-    log i "| Number of active #${case_count}"
+    log i "Number of active #${case_count}"
 		;;
 	* )
 		# Incidents
@@ -1339,11 +1367,11 @@ function f_ls_prototype() {
 	 	f_get_development_cases $todotxt
 	 	# H2S
 	 	f_get_h2s_cases $todotxt
-		log i "| Customization Support  ${str_search}"
+		log i "Customization Support  ${str_search}"
 		cat $inc_file | $li_sort
-		log i "| JIRA issues / Development  ${str_search}"
+		log i "JIRA issues / Development  ${str_search}"
 		cat $jira_file | $lj_sort
-		log i "| H2S's  ${str_search}"
+		log i "H2S's  ${str_search}"
 		cat $h2s_file | $lh_sort
 		f_wc $@
 		;;
@@ -1489,38 +1517,52 @@ function f_todotxt() {
 	[[ -z $1 ]] || id=$1 # if $1 supplied, fill id with the value
 	f_get_inc_filter
 	if [[ $nlines == 0 ]];then
-		log e "f_todotxt: case with id ${id} was not found. Exit"
+		log e "f_todotxt(): case with id ${id} was not found. Exit"
 		return
 	fi
 
-	log t "f_todotxt: grepped=${grepped}"
+	log t "f_todotxt(): grepped=${grepped}"
 	case_arr=( $( f_parse_inc_name $grepped ) )
-	log t "f_todotxt: case_arr: ${case_arr[*]}"
+	log t "f_todotxt(): case_arr: ${case_arr[*]}"
 	# newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust}${delim}${desc// /_}
 	case_type=${case_arr[1]}; team=${case_arr[2]}; cust=${case_arr[3]}; desc=${case_arr[4]}
-	log t "f_todotxt: id: ${id}, case_type:  ${case_type}, team: ${team}, cust: ${cust}, desc: ${desc}"
+	log t "f_todotxt(): id: ${id}, case_type:  ${case_type}, team: ${team}, cust: ${cust}, desc: ${desc}"
 	if [[ -f $TODOTXT_FILE ]];then
 		if [[ $(grep -r $id $TODOTXT_FILE | wc -l) > 0 ]];then
-			log e "f_todotxt: ${TODOTXT_FILE} already contain task with case ID #${id}"
+			log e "f_todotxt(): ${TODOTXT_FILE} already contain task with case ID #${id}"
 		else
-			log i "f_todotxt: ${TODOTXT_FILE} file was updated with case ID #${id}"
-			log t "f_todotxt: '@${TODOTXT_PROJECT} +${id} ${cust} ${desc} due:${TODOTXT_DUE_DATE} rec:1d' >> $TODOTXT_FILE"
-			echo "@${TODOTXT_PROJECT} +${id} ${cust} ${desc} due:${TODOTXT_DUE_DATE} rec:1d" >> $TODOTXT_FILE
+			log i "f_todotxt(): ${TODOTXT_FILE} file was updated with case ID #${id}"
+			log t "f_todotxt(): '@${case_type,,} +${id} ${cust} ${desc} due:${TODOTXT_DUE_DATE} rec:1d' >> $TODOTXT_FILE"
+			echo "@${case_type,,} +${id} ${cust} ${desc} due:${TODOTXT_DUE_DATE} rec:1d" >> $TODOTXT_FILE
 		fi
 	else
-		log e "f_todotxt: todotxt file (${TODOTXT_FILE}) does not exist"
+		log e "f_todotxt(): todotxt file (${TODOTXT_FILE}) does not exist"
 	fi
 	} # eo: f_todotxt()
 
 ### Main {{
 f_s_init
 if [[ $1 == "--bashcompletion" ]];then
-	path_length=$(( ${#main_path} + 1 ))
-	for d in $(find $main_path -type d -maxdepth 1); do
-		echo ${d:$path_length} | awk -F$delim '{print $1}'
-	done
-	echo "--todotxt"
-	unset d
+	if [[ $2 == "inc" ]] || [[ $2 == "ops" ]];then
+		if [[ $2 == "inc" ]];then
+			echo "--todotxt"
+		fi
+		if [[ $2 == "ops" ]];then
+			echo "-si"
+		fi
+		path_length=$(( ${#main_path} + 1 ))
+		for d in $(find $main_path -type d -maxdepth 1 | grep -v "${delim}DEV${delim}"); do
+			echo ${d:$path_length} | awk -F$delim '{print $1}'
+		done
+		unset d
+	elif [[ $2 == "dev" ]];then
+		echo "--todotxt"
+		path_length=$(( ${#main_path} + 1 ))
+		for d in $(find $main_path -type d -name "*DEV*" -maxdepth 1); do
+			echo ${d:$path_length} | awk -F$delim '{print $1}'
+		done
+		unset d
+	fi
 	exit 0
 fi
 f_s_boc
@@ -1531,7 +1573,7 @@ else
 fi #EXP_ARGS
 # log i "$(ps -o rss=,vsz= $$ | awk '{printf "RSS %.0fMB; VSZ %.0fGB\n", $1 / 1024, $2 / (1024 * 1024)}')"
 timer_end=$(date +"%s%N")
-log i "$(ps -o rss= $$ | awk '{printf "MEMORY: RSS (resident set) %.0fMB %.0fkB\n", $1 / 1024, $1}') | TIME EXPENSE: $(( $(( $timer_end - $timer_start )) / 1000000 ))ms"
+log i "$(ps -o rss= $$ | awk '{printf "MEMORY: %.0fkB\n", $1}') | TIME EXPENSE: $(( $(( $timer_end - $timer_start )) / 1000000 ))ms"
 f_s_eoc
 #eo:Main }}
 

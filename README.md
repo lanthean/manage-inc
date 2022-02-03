@@ -16,7 +16,6 @@
 # @Package  manage-inc
 ###
 ```
-
 # manage incidents
 
 CLI tool to help manage support incidents, development and Handover to Support _H2S_ tasks (investigation notes, details, etc.).  
@@ -33,7 +32,6 @@ inc --help
 ## Install
 
 + Clone repository to ~/bin/manage-inc:
-
 ```sh
 (( -d ~/bin/manage-inc )) || mkdir -p ~/bin/manage-inc
 pushd ~/bin && git clone https://github.com/lanthean/manage-inc.git
@@ -41,7 +39,6 @@ popd
 ```
 
 + Compile and create link using Makefile
-
 ```sh
 pushd ~/bin/manage-inc
 make
@@ -50,14 +47,11 @@ make
 ### Alternatively (manual steps)
 
 + Create link to ~/bin (which should be in $PATH):
-
 ```sh
 (( -f ~/bin/inc )) || ln -s ~/bin/manage-inc/inc ~/bin/
-(( -f /etc/bash_completion.d/inc )) || ln -sf ${PWD}/bash_completion.d/inc /etc/bash_completion.d/
 ```
 
 + Compile inc.sh (install dependencies first)
-
 ```sh
 # MAC: brew install shc
 # Ubunut: apt install shc
@@ -66,7 +60,29 @@ make
 shc -f inc.sh -o inc
 ```
 
-## Contact me
+### bash_completion.d
+```sh
+(( -f /etc/bash_completion.d/inc )) || ln -sf ${PWD}/bash_completion.d/inc /etc/bash_completion.d/
+(( -f /etc/bash_completion.d/ops )) || ln -sf ${PWD}/bash_completion.d/ops /etc/bash_completion.d/
+# macos
+(( -f /opt/homebrew/etc/bash_completion.d/inc )) || ln -sf ${PWD}/bash_completion.d/inc /opt/homebrew/etc/bash_completion.d/
+(( -f /opt/homebrew/etc/bash_completion.d/ops )) || ln -sf ${PWD}/bash_completion.d/ops /opt/homebrew/etc/bash_completion.d/
+```
 
+#### zsh
+~/.zshrc
+```sh
+completion_plugins=(
+  inc
+  ops
+)
+if [[ -d /opt/homebrew/etc/bash_completion.d/ ]];then
+  for f in ${completion_plugins[@]};do
+    [[ -r /opt/homebrew/etc/bash_completion.d/$f ]] && source /opt/homebrew/etc/bash_completion.d/$f
+  done
+fi
+```
+
+## Contact me
 e [lanthean@protonmail.com](mailto:lanthean@protonmail.com)  
 g <https://github.com/lanthean>
