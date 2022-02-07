@@ -20,6 +20,9 @@ timer_start=$(date +"%s%N")
 VERSION='2.2.1'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
+# available LOG_LEVEL values: t,d,i,w,e
+LOG_LEVEL=i
+
 ## Static functions
 function f_s_init() {
   # def vars
@@ -31,8 +34,6 @@ function f_s_init() {
 	def_path=~/inc
 	main_path=$def_path/main
 
-	# available LOG_LEVEL values: t,d,i,w,e
-	LOG_LEVEL=i
 	## disable logging [true|false]
 	# LOG_DISABLED=true
 	LOG_FILE=$def_path/log/incidents.log
@@ -66,7 +67,7 @@ function f_s_init() {
 	team_path=$main_path/team
 	delim="__"
 	id_def="xxxxxx000000xxxxxx"
-	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})"
+	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})|(CUS-[0-9]{4,})|([0-9]{6})"
 	id=$id_def
 	max_lines=999 #47
 
@@ -346,7 +347,8 @@ function f_get_h2s_cases() {
 		log t "f_get_h2s_cases() - create ${h2s_file}"
 		touch $h2s_file
 	fi
-	log t "f_get_h2s_cases() - main_path: ${main_path}; grep: ${grep}"
+	log t "f_get_h2s_cases(): main_path: ${main_path}; grep: ${grep}"
+	log t "\$(ls -t $main_path | grep "${delim}H2S${delim}" | egrep -i "$grep")"
 	for dir in $(ls -t $main_path | grep "${delim}H2S${delim}" | egrep -i "$grep");do 
 		log t "dir: ${dir}"
 		P="" S="" U="" STATUS=""
@@ -1165,9 +1167,15 @@ function f_args() {
 	} 
 
 function f_ls() { 
+	log t "f_ls(): $*"
 	if [ $# -gt $EXP_ARGS ]; then
-		log t "f_ls() - \$2=$2"
 		case $2 in 
+			"--raw" )
+				log i "Listing raw with \"grep $3\""
+				log t "find $def_path/* -name \"*$3*\""
+				find $def_path/* -name "*$3*"
+				return
+				;;
 			"-f" )
 				if [ "$#" -lt 3 ];then
 					log i "full main_path"
@@ -1379,6 +1387,7 @@ function f_ls_prototype() {
 	return
 	} 
 function f_wc() { 
+	log t "f_wc(): $*"
 	if [ $# -gt $EXP_ARGS ]; then
 		case $2 in
 			"-v")
@@ -1389,6 +1398,11 @@ function f_wc() {
 				log i "Linecount of $3"
 				log i "	...	 $(ls $main_path | egrep $INC_MATCH | egrep "$3" | wc -l)	...	"
 				echo
+				;;
+			"-d")
+				log i "Linecount with \"grep $3\""
+				log t "\$(ls $main_path | egrep $INC_MATCH | grep $3 | wc -l)"
+				log i "	...	 $(ls $main_path | egrep $INC_MATCH | grep $3 | wc -l)	...	"
 				;;
 			*)
 				log i "Linecount with \"grep $2\""
@@ -1576,6 +1590,5 @@ timer_end=$(date +"%s%N")
 log i "$(ps -o rss= $$ | awk '{printf "MEMORY: %.0fkB\n", $1}') | TIME EXPENSE: $(( $(( $timer_end - $timer_start )) / 1000000 ))ms"
 f_s_eoc
 #eo:Main }}
-
 ###
 #EOF
