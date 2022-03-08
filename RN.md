@@ -20,6 +20,10 @@
 # RN - Release Notes
 
 ```
+08/02/2022  -- Version 2.2.2
+            -- fixes to integration with todotxt+
+            -- JIRA - added URI of at.mavenir.com to inc template
+
 03/02/2022  -- Version 2.2.1
             -- Integration with JIRA
 

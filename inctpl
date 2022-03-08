@@ -9,7 +9,7 @@
 # @Type	  [CS/H2S/JIRA]
 #
 # @ID       %ID%
-# @LINK-TO  
+# @LINK-TO  %LINK_TO%
 # @SF-ID    %SFID%
 # @CRQ      
 # @Wiki     
@@ -37,13 +37,20 @@ eo:cust-desc}}
 ## [connection] {{
 cm %CUSTOMER%
 eo:connection}}
+## [system logs] {{
+### system log {{
+```sh
+```
+eo: system log }}
+eo:system logs}}
 ## [notes] {{
-### xxx {{
+### %DATE% {{
+NEW
 #### update {{
 ```email
 ```
 ####eo:update }}
-###eo:xxx }}
+###eo:%DATE% }}
 ### xxx {{
 #### update {{
 ```email

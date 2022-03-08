@@ -17,7 +17,7 @@
 ###
 
 timer_start=$(date +"%s%N")
-VERSION='2.2.1'
+VERSION='2.2.2'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 # available LOG_LEVEL values: t,d,i,w,e
@@ -169,7 +169,7 @@ function f_get_rename() {
 			f_get_rename
 			;;
 		[Tt] )
-			read -p "|	Enter new case type ([I]NC, [H]2S, [D]EV): " case_type
+			read -p "|	Enter new case type ([I]NC, [H]2S, [D]EV): " __case_type
 			log t "input case_type: $case_type"
 			f_get_case_type
 			log t "normalized case_type: $case_type"
@@ -268,7 +268,7 @@ function f_get_support_cases() {
 		##
 		# Table display
 		if [[ $1 == "todotxt" ]];then
-			printf "%-4s %-8s %3s %-15s %-80s\n" "@${_type,,}" "+$_id" "$_team" "$_customer" "$_description" >> $inc_file
+			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $inc_file
 		else
 			printf "%-8s | %3s | %3s | %-15s | %-80s |%-7s |%-11s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
 		fi
@@ -330,7 +330,7 @@ function f_get_development_cases() {
 		##
 		# Table display
 		if [[ $1 == "todotxt" ]];then
-			printf "%-4s %-10s %3s %-20s %-80s\n" "@${_type,,}" "+$_id" "$_team" "$_customer" "$_description" >> $jira_file
+			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $jira_file
 		else
 			printf "%-8s | %3s | %3s | %-20s | %-80s |%-13s |%-13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$S" "$U" >> $jira_file
 		fi
@@ -406,7 +406,7 @@ function f_get_h2s_cases() {
 		##
 		# Table display
 		if [[ $1 == "todotxt" ]];then
-			printf "%-4s %-9s %3s %-15s %-60s\n" "@${_type,,}" "+$_id" "$_team" "$_customer" "$_description" >> $h2s_file
+			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $h2s_file
 		else
 			printf "%-8s | %3s | %3s | %-15s | %-60s |%-20s |%-13s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${STATUS^^}" "$P" "$U" >> $h2s_file
 		fi
@@ -676,8 +676,9 @@ function f_create_new_inc () {
 			rec_id=${arr_jira[0]}
 			# echo "$rec_id $prio $stat $cust $desc"
 
+			JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
 			echo "JIRA URI: "
-			echo "https://at.mavenir.com/jira/browse/${rec_id}"
+			echo "${JIRA_URI}"
 		else
 			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
 			log e "Case: ${id} does not exist in JIRA."
@@ -713,10 +714,11 @@ function f_create_new_inc () {
 			SYSTEMS=${systems}
 			RELEASE=${release}
 			CONTACT=${contact}
+			LINK_TO=${JIRA_URI}
 
 			# echo "$main_path/$newinc/ticket" v "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
 			# read -p "Press any key to continue"
-			$HOME/bin/newincf "$main_path/$newinc/ticket" mvim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
+			$HOME/bin/newincf "$main_path/$newinc/ticket" mvim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS" "$LINK_TO"
 
 			# f_check_links
 			if [ $? == 0 ]; then
@@ -1539,15 +1541,15 @@ function f_todotxt() {
 	case_arr=( $( f_parse_inc_name $grepped ) )
 	log t "f_todotxt(): case_arr: ${case_arr[*]}"
 	# newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust}${delim}${desc// /_}
-	case_type=${case_arr[1]}; team=${case_arr[2]}; cust=${case_arr[3]}; desc=${case_arr[4]}
-	log t "f_todotxt(): id: ${id}, case_type:  ${case_type}, team: ${team}, cust: ${cust}, desc: ${desc}"
+	__case_type=${case_arr[1]}; __team=${case_arr[2]}; __cust=${case_arr[3]}; __desc=${case_arr[4]}
+	log t "f_todotxt(): id: ${id}, __case_type:  ${__case_type}, __team: ${__team}, __cust: ${__cust}, __desc: ${__desc}"
 	if [[ -f $TODOTXT_FILE ]];then
-		if [[ $(grep -r $id $TODOTXT_FILE | wc -l) > 0 ]];then
-			log e "f_todotxt(): ${TODOTXT_FILE} already contain task with case ID #${id}"
+		if [[ $(grep -re "${id}.*due:${TODOTXT_DUE_DATE}" $TODOTXT_FILE | wc -l) > 0 ]];then
+			log e "f_todotxt(): ${TODOTXT_FILE} already contain task with case ID #${id} and due:${TODOTXT_DUE_DATE}"
 		else
-			log i "f_todotxt(): ${TODOTXT_FILE} file was updated with case ID #${id}"
-			log t "f_todotxt(): '@${case_type,,} +${id} ${cust} ${desc} due:${TODOTXT_DUE_DATE} rec:1d' >> $TODOTXT_FILE"
-			echo "@${case_type,,} +${id} ${cust} ${desc} due:${TODOTXT_DUE_DATE} rec:1d" >> $TODOTXT_FILE
+			log i "${TODOTXT_FILE} file was updated with case ID: #${id} and DUE: ${TODOTXT_DUE_DATE}"
+			log t "f_todotxt(): '@${__case_type,,} +${id} ${__cust} ${__desc} due:${TODOTXT_DUE_DATE} rec:1d' >> $TODOTXT_FILE"
+			echo "@${__case_type,,} +${id} ${__cust} ${__desc} due:${TODOTXT_DUE_DATE} rec:1d" >> $TODOTXT_FILE
 		fi
 	else
 		log e "f_todotxt(): todotxt file (${TODOTXT_FILE}) does not exist"

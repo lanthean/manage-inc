@@ -76,21 +76,21 @@ if [ "$EXP_ARGS" -le "$#" ] || [ "$#" -gt "3" ]; then
 		##
 		# Mac: sed -i expects "extension" of a backup file, without said extension it ends with error
 		# therefore sed -i >>"~"<< ..
-		log d "sed -i \"~\" \"s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;\" \"$1.$EXT\""
-	 	sed -i "~" "s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;" "$1.$EXT"
+		log d "sed -i \"~\" \"s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;s/\%LINK_TO\%/${15}/g;\" \"$1.$EXT\""
+	 	sed -i "~" "s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;s/\%LINK_TO\%/${15}/g;" "$1.$EXT"
 		if [ -f $1.$EXT~ ];then
 			log i "Removing temporary file $1.$EXT~ created by MacOS version of sed"
 			rm $1.$EXT~
 		fi
 	else
-		log d "sed -i \"s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;\" \"$1.$EXT\""
-		sed -i "s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;" "$1.$EXT"
+		log d "sed -i \"s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;s/\%LINK_TO\%/${15}/g;\" \"$1.$EXT\""
+		sed -i "s/\%DATE\%/$3/g;s/\%UPDATE\%/$4/g;s/\%PRI\%/$5/g;s/\%ID\%/$6/g;s/\%SFID\%/$7/g;s/\%TOPIC\%/$8/g;s/\%CUSTOMER\%/$9/g;s/\%PRODUCT\%/${10}/g;s/\%SYSTEMS\%/${11}/g;s/\%RELEASE\%/${12}/g;s/\%CONTACT\%/${13}/g;s/\%STATUS\%/${14}/g;s/\%LINK_TO\%/${15}/g;" "$1.$EXT"
 	fi
   	#	set +x
   	openfile $1.$EXT $2
 else
 	echo " --"
-    echo "|[E] Usage $script_name {/path/to/new_$EXT_file [k|g|gv|go] [DATE] [UPDATE] [PRI] [ID] [SFID] [TOPIC] [CUSTOMER] [PRODUCT] [SYSTEM] [RELEASE] [CONTACT] [STATUS]}"
+    echo "|[E] Usage $script_name {/path/to/new_$EXT_file [k|g|gv|go] [DATE] [UPDATE] [PRI] [ID] [SFID] [TOPIC] [CUSTOMER] [PRODUCT] [SYSTEM] [RELEASE] [CONTACT] [STATUS] [LINK_TO]}"
     echo " --"
 fi
 
