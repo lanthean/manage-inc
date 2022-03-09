@@ -17,7 +17,7 @@
 ###
 
 timer_start=$(date +"%s%N")
-VERSION='2.2.2'
+VERSION='2.2.3'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 # available LOG_LEVEL values: t,d,i,w,e
@@ -111,6 +111,10 @@ function f_get_user_consent() {
 	fi
 	read -p "|	${message} [Y/n]: " yn
 	if [[ $yn == "n" ]];then
+		if [[ ! -z $2 ]];then
+			log d "f_get_user_consent(): executing -> $2"
+			$($2)
+		fi
 		log w "User abort"
 		f_s_eoc
 		exit 0
@@ -471,8 +475,14 @@ function f_get_status() {
 	# INC_RWC="restored WC"
 	# INC_RES="resolved"
 	# INC_CLS="closed"
-	id=$2
-	case $3 in
+	if [[ $# -gt 2 ]];then
+		id=$2
+		__status=$3
+	else
+		__status=$2
+	fi
+	log d "f_get_status(): $*"
+	case $__status in
 		"new" )	INC_NEW_STATUS=${INC_NEW};;
 		"rsp" )	INC_NEW_STATUS=${INC_RSP};;
 		"act" )	INC_NEW_STATUS=${INC_ACT};;
@@ -484,11 +494,43 @@ function f_get_status() {
 		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls ]";;
 	esac
 	}
+function f_get_help() {
+	log i "[h]  Script: "$script_name
+	log i "[h]  Help: Listing of available extensions"
+	f_get_listing_help
+	log i "[h]  wc			... in default mode will show how many incidents are there in my queue"
+	log i "[h]  wc -v		... show how many incidents are there while filtering the \$3 out of the result"
+	log i "[h]  log			... show incident management log"
+	log i "[h]  [-s] ID status	... [--set-status] set new status + update @Update to current date"
+	log i "[h] 			... e.g. \$ inc -s <inc_id> [ new | rsp | act | awc | rst | rwc | res | cls ]"
+	log i "[h] 			... also \$ inc <inc_id> -s [ new | rsp | act | awc | rst | rwc | res | cls ]"
+	log i "[h]  [-d] done		... move incident to $done_path folder"
+	log i "[h]  [-t] team		... move incident to $team_path folder"
+	log i "[h]  [-b][bto] backtops	... move incident to $backtoops_path folder"
+	log i "[h]  [-u][rti] return 	... move incident back from $backtoops_path"
+	log i "[h]  [-r] rename		... rename incident"
+	log i "[h]  [-M] remove		... delete incident | [M]ove incident to trash"
+	log i "[h]  [-n] new		... create new incident"
+	log i "[h]  [-l] links		... check soft links"
+	log i "[h]  If no argument, wizard is started, asking for an ID. Then handling of this partial incident or a new on is started. Have an incident number/ID ready."
+	}
+function f_get_listing_help() {
+	log i "[h]  [l]s			... in default mode will list all apropriate INC directories.
+					[W]orkaround, [S]olution,[U]pdate dates from ./INC../ticket.{ntx,txt,md}"
+	log i "[li]    			... list only incidents"
+	log i "[lj]    			... list only development/assessment JIRA tasks"
+	log i "[lh]    			... list only H2S JiRA tasks"
+	log i "[h]  ls -f		... full main_path"
+	log i "[h]  ls -v		... filter \$3 out of the result"
+	log i "[h]  ls -I		... filter \$3 case sensitive"
+	log i "[h]  ls -n		... ls -l incidents by name [crosscheck with ARS|Nikita]"	
+	log i "[h]  ls -24		... ls -rl 24x7 and Emergency incidents from $year"	
+	}
 function f_set_status() {
 	# Set correct case status
 	#
 	# return: void
-	id=$2
+	[[ $# -gt 2 ]] && id=$2
 	f_get_inc_filter
 	f_get_status $@
 
@@ -505,7 +547,7 @@ function f_set_status() {
 	cat ${ticket_file_with_path} | sed -e "s/^# @Update.*$/# @Update\t${DATE}/g;s/^# @Status.*$/# @Status\t${INC_NEW_STATUS}/g" > ${ticket_file_with_path}.tmp
 	
 	log i "${grepped}/ticket.md.tmp was created with new STATUS: ${INC_NEW_STATUS}"
-	f_get_user_consent "Is the .tmp file OK?"
+	f_get_user_consent "Is the .tmp file OK?" "rm ${ticket_file_with_path}.tmp"
 	log t "mv ${ticket_file_with_path}.tmp ${ticket_file_with_path}"
 	mv ${ticket_file_with_path}.tmp ${ticket_file_with_path}
 	}
@@ -1059,7 +1101,7 @@ function f_args() {
 			return
 			;;
 		"-s" | "--set-status" ) #incident reassigned within team function
-			if [[ $# -lt 3 ]];then
+			if [[ $# -lt 2 ]];then
 				log e "inc [-s|--status] called with too few arguments"
 				f_s_eoc
 			else
@@ -1112,36 +1154,11 @@ function f_args() {
 			return
 			;;
 		"--help" | "-h" | "-?" )
-			log i "[h]  Script: "$script_name
-			log i "[h]  Help: Listing of available extensions"
-			f_args -lh
-			log i "[h]  wc			... in default mode will show how many incidents are there in my queue"
-			log i "[h]  wc -v		... show how many incidents are there while filtering the \$3 out of the result"
-			log i "[h]  log			... show incident management log"
-			log i "[h]  [-s] ID status	... [--set-status] set new status + update @Update to current date"
-			log i "[h] 			... e.g. \$ inc -s <inc_id> [ new | rsp | act | awc | rst | rwc | res | cls ]"
-			log i "[h]  [-d] done		... move incident to $done_path folder"
-			log i "[h]  [-t] team		... move incident to $team_path folder"
-			log i "[h]  [-b][bto] backtops	... move incident to $backtoops_path folder"
-			log i "[h]  [-u][rti] return 	... move incident back from $backtoops_path"
-			log i "[h]  [-r] rename		... rename incident"
-			log i "[h]  [-M] remove		... delete incident | [M]ove incident to trash"
-			log i "[h]  [-n] new		... create new incident"
-			log i "[h]  [-l] links		... check soft links"
-			log i "[h]  If no argument, wizard is started, asking for an ID. Then handling of this partial incident or a new on is started. Have an incident number/ID ready."
+			f_get_help
 			return
 			;;
 		"-lh"|"-hl" ) #listing help for ls function
-			log i "[h]  [l]s			... in default mode will list all apropriate INC directories.
-							[W]orkaround, [S]olution,[U]pdate dates from ./INC../ticket.{ntx,txt,md}"
-			log i "[li]    			... list only incidents"
-			log i "[lj]    			... list only development/assessment JIRA tasks"
-			log i "[lh]    			... list only H2S JiRA tasks"
-			log i "[h]  ls -f		... full main_path"
-			log i "[h]  ls -v		... filter \$3 out of the result"
-			log i "[h]  ls -I		... filter \$3 case sensitive"
-			log i "[h]  ls -n		... ls -l incidents by name [crosscheck with ARS|Nikita]"	
-			log i "[h]  ls -24		... ls -rl 24x7 and Emergency incidents from $year"	
+			f_get_listing_help
 			return
 			;;
 		"-v" | "--version" | "version" | "copyright")
@@ -1153,7 +1170,7 @@ function f_args() {
 		# $1 = case reference (e.g. 380123) or JIRA reference (e.g. CUS-3050)
 			log d "id passed awk test as $1"
 			id=$1
-			f_id_as_first_argument
+			f_id_as_first_argument $@
 			return
 			;;
 		"." )
@@ -1503,21 +1520,34 @@ function f_id_as_first_argument() {
 		else
 			log w "Case already exists: \n${main_path}/${grepped}"
 		fi
-		read -p "|	Do you want to [O]pen ${id} or [r]ename it or [n]either? [O/r/n] " orn
-	    case $orn in
-			[Nn]* ) 
-				log i "User abort"
-				return
-				;;
-			[Rr]* ) 
-				log i "Renaming.."
-				f_rename
-				;;
-			* ) 
-				log i "Opening.."
-				f_open
-				;;
-		esac
+		if [[ $# -gt 1 ]];then
+			# Switch input arguments 1 and 2 (leave the rest intact):
+			all_input_args=("$@")
+			log d "f_id_as_first_argument(): \${all_input_args[*]}=${all_input_args[*]}"
+			_1=$2
+			_2=$1
+			_args=("$_1" "$_2" "${all_input_args[@]:2}")
+			log d "f_id_as_first_argument(): \${_args[*]}=${_args[*]}"
+			
+			# and restart f_args
+			f_args "${_args[@]}"
+		else
+			read -p "|	Do you want to [O]pen ${id} or [r]ename it or [n]either? [O/r/n] " orn
+			case $orn in
+				[Nn]* ) 
+					log i "User abort"
+					return
+					;;
+				[Rr]* ) 
+					log i "Renaming.."
+					f_rename
+					;;
+				* ) 
+					log i "Opening.."
+					f_open
+					;;
+			esac
+		fi
 
 	elif [ -z $grepped ]; then
 		# User input empty - finish with error
@@ -1592,5 +1622,6 @@ timer_end=$(date +"%s%N")
 log i "$(ps -o rss= $$ | awk '{printf "MEMORY: %.0fkB\n", $1}') | TIME EXPENSE: $(( $(( $timer_end - $timer_start )) / 1000000 ))ms"
 f_s_eoc
 #eo:Main }}
+
 ###
 #EOF

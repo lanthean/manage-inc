@@ -20,7 +20,11 @@
 # RN - Release Notes
 
 ```
-08/02/2022  -- Version 2.2.2
+09/03/2022  -- Version 2.2.3
+            -- first 2 input arguments can be switched now 
+            -- e.g. inc 443545 -d amounts to the same as inc -d 443545
+
+08/03/2022  -- Version 2.2.2
             -- fixes to integration with todotxt+
             -- JIRA - added URI of at.mavenir.com to inc template
 
