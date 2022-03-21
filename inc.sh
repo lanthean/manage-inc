@@ -53,6 +53,8 @@ function f_s_init() {
 	INC_RWC="RESTORED WC"
 	INC_RES="RESOLVED"
 	INC_CLS="CLOSED"
+	INC_IP="In Progress"
+	INC_DONE="Done"
 
 	##
 	# in case decision is made to distribute incident/h2s/jira issues to separate directories ./incidents; ./h2s; ./jira
@@ -475,6 +477,8 @@ function f_get_status() {
 	# INC_RWC="restored WC"
 	# INC_RES="resolved"
 	# INC_CLS="closed"
+	# INC_IP="In Progress"
+	# INC_DONE="Done"
 	if [[ $# -gt 2 ]];then
 		id=$2
 		__status=$3
@@ -482,16 +486,18 @@ function f_get_status() {
 		__status=$2
 	fi
 	log d "f_get_status(): $*"
-	case $__status in
-		"new" )	INC_NEW_STATUS=${INC_NEW};;
-		"rsp" )	INC_NEW_STATUS=${INC_RSP};;
-		"act" )	INC_NEW_STATUS=${INC_ACT};;
-		"awc" )	INC_NEW_STATUS=${INC_AWC};;
-		"rst" )	INC_NEW_STATUS=${INC_RST};;
-		"rwc" )	INC_NEW_STATUS=${INC_RWC};;
-		"res" )	INC_NEW_STATUS=${INC_RES};;
-		"cls" )	INC_NEW_STATUS=${INC_CLS};;
-		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls ]";;
+	case ${__status,,} in
+		"new" )		INC_NEW_STATUS=${INC_NEW};;
+		"rsp" )		INC_NEW_STATUS=${INC_RSP};;
+		"act" )		INC_NEW_STATUS=${INC_ACT};;
+		"awc" )		INC_NEW_STATUS=${INC_AWC};;
+		"rst" )		INC_NEW_STATUS=${INC_RST};;
+		"rwc" )		INC_NEW_STATUS=${INC_RWC};;
+		"res" )		INC_NEW_STATUS=${INC_RES};;
+		"cls" )		INC_NEW_STATUS=${INC_CLS};;
+		"ip" )		INC_NEW_STATUS=${INC_IP};;
+		"done" )	INC_NEW_STATUS=${INC_DONE};;
+		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls | ip | done ]";;
 	esac
 	}
 function f_get_help() {
@@ -721,6 +727,7 @@ function f_create_new_inc () {
 			JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
 			echo "JIRA URI: "
 			echo "${JIRA_URI}"
+			echo "desc: ${desc}"
 		else
 			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
 			log e "Case: ${id} does not exist in JIRA."
@@ -756,7 +763,7 @@ function f_create_new_inc () {
 			SYSTEMS=${systems}
 			RELEASE=${release}
 			CONTACT=${contact}
-			LINK_TO=${JIRA_URI}
+			LINK_TO='https:\/\/at.mavenir.com\/jira\/browse\/'${rec_id}
 
 			# echo "$main_path/$newinc/ticket" v "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
 			# read -p "Press any key to continue"
@@ -1574,7 +1581,7 @@ function f_todotxt() {
 	__case_type=${case_arr[1]}; __team=${case_arr[2]}; __cust=${case_arr[3]}; __desc=${case_arr[4]}
 	log t "f_todotxt(): id: ${id}, __case_type:  ${__case_type}, __team: ${__team}, __cust: ${__cust}, __desc: ${__desc}"
 	if [[ -f $TODOTXT_FILE ]];then
-		if [[ $(grep -re "${id}.*due:${TODOTXT_DUE_DATE}" $TODOTXT_FILE | wc -l) > 0 ]];then
+		if [[ $(cat $TODOTXT_FILE | grep -ve "^x" | grep -e "${id}.*due:${TODOTXT_DUE_DATE}" | wc -l) > 0 ]];then
 			log e "f_todotxt(): ${TODOTXT_FILE} already contain task with case ID #${id} and due:${TODOTXT_DUE_DATE}"
 		else
 			log i "${TODOTXT_FILE} file was updated with case ID: #${id} and DUE: ${TODOTXT_DUE_DATE}"
@@ -1591,7 +1598,13 @@ f_s_init
 if [[ $1 == "--bashcompletion" ]];then
 	if [[ $2 == "inc" ]] || [[ $2 == "ops" ]];then
 		if [[ $2 == "inc" ]];then
-			echo "--todotxt"
+			if [[ $3 == "-s" ]];then
+				echo "new"; echo "rsp"; echo "act"; echo "awc"; echo "rst"; echo "rwc"; echo "res"; echo "cls"; echo "ip"
+				exit
+			elif [[ $3 == "args" ]];then
+				echo "--todotxt"; echo "-s"; echo "-d"; echo "-t"; echo "-r"; echo "-M"; echo "-u"; echo "-b"
+				exit
+			fi
 		fi
 		if [[ $2 == "ops" ]];then
 			echo "-si"
