@@ -716,13 +716,19 @@ function f_create_new_inc () {
 			IFS="|" read -a arr_jira <<< "$jira_res"
 			IFS=$OIFS
 
+			log d "jira_res=$jira_res"
 			prio=${arr_jira[1]}
+			log d "prio=$prio"
 			stat=${arr_jira[2]}
+			log d "stat=$stat"
 			cust=${arr_jira[3]}
+			log d "cust=$cust"
 			sfid=${arr_jira[4]}
+			log d "sfid=$sfid"
 			desc=${arr_jira[5]}
+			log d "desc=$desc"
 			rec_id=${arr_jira[0]}
-			# echo "$rec_id $prio $stat $cust $desc"
+			log d "rec_id=$rec_id"
 
 			JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
 			echo "JIRA URI: "
