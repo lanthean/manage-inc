@@ -20,6 +20,10 @@
 # RN - Release Notes
 
 ```
+25/04/2022  -- Version 2.2.4
+            -- todotxt can be now called from id_as_first_argument, like in below example
+            -- e.g. inc 443545 + selecting [t] in wizard
+
 09/03/2022  -- Version 2.2.3
             -- first 2 input arguments can be switched now 
             -- e.g. inc 443545 -d amounts to the same as inc -d 443545

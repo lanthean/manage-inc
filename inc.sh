@@ -17,7 +17,7 @@
 ###
 
 timer_start=$(date +"%s%N")
-VERSION='2.2.3'
+VERSION='2.2.4'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 # available LOG_LEVEL values: t,d,i,w,e
@@ -1545,7 +1545,8 @@ function f_id_as_first_argument() {
 			# and restart f_args
 			f_args "${_args[@]}"
 		else
-			read -p "|	Do you want to [O]pen ${id} or [r]ename it or [n]either? [O/r/n] " orn
+			echo "| Do you want to [O]pen ${id} or [r]ename or add to [t]odotxt it or [n]either?"
+			read -p "| [O/t/r/n]: " orn
 			case $orn in
 				[Nn]* ) 
 					log i "User abort"
@@ -1554,6 +1555,10 @@ function f_id_as_first_argument() {
 				[Rr]* ) 
 					log i "Renaming.."
 					f_rename
+					;;
+				[Tt]* ) 
+					log i "Todotxt+"
+					f_todotxt
 					;;
 				* ) 
 					log i "Opening.."
