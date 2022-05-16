@@ -203,6 +203,7 @@ function f_get_rename() {
 		[Dd] )
 			read -p "|	Enter new Description: " desc_raw
 			desc=${desc_raw// /_}
+			desc=${desc//\//-}
 			log t "desc_raw: $desc_raw"
 			log t "desc: $desc"
 			desc_ch=1
@@ -568,8 +569,8 @@ function f_readinp() {
 	read -p "|	Priority of the incident [${prio}]: " _prio
 	read -p "|	Status of the incident [${stat}]: " _stat
 	read -p "|	Contact: " contact
-	read -p "|	Release: " release
 	read -p "|	Systems: " systems
+	read -p "|	Release: " release
 	read -p "|	SF-ID [${sfid}]: " _sfid
 
 	[ "$_cust" != "" ] &&  cust=$_cust
@@ -695,7 +696,7 @@ function f_create_new_inc () {
 			prio=${arr_heat[1]}
 			stat=${arr_heat[2]}
 			cust=${arr_heat[3]}
-			desc=${arr_heat[6]}
+			desc=${arr_heat[6]//\//-}
 			rec_id=${arr_heat[7]}
 
 			echo "HEAT URI: "
@@ -1086,6 +1087,10 @@ function f_args() {
 				id=$2
 			fi
 			f_rename $@
+			return
+			;;
+		"-o" | "--open" ) #remove an incident function
+			f_open $@
 			return
 			;;
 		"-M" | "remove" ) #remove an incident function
