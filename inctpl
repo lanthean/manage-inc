@@ -49,13 +49,21 @@ NEW
 #### update {{
 ```email
 ```
-####eo:update }}
+eo:update }}
+#### system log {{
+```sh
+```
+eo: system log }}
 ###eo:%DATE% }}
 ### xxx {{
 #### update {{
 ```email
 ```
-####eo:update }}
+eo:update }}
+#### system log {{
+```sh
+```
+eo: system log }}
 ###eo:xxx }}
 ##eo:notes}}
 ## [close-notes] {{

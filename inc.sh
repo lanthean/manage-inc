@@ -25,14 +25,14 @@ LOG_LEVEL=i
 
 ## Static functions
 function f_s_init() {
-  # def vars
+	# def vars
 	user="$(/usr/bin/whoami)"
 	handle='incident (plaintext/markdown/filetree) management'
 	script_name='inc'
 	EXP_ARGS=1
 	year="$(date +"%Y")"
 	def_path=~/inc
-	main_path=$def_path/main
+	main_path=$def_path
 
 	## disable logging [true|false]
 	# LOG_DISABLED=true
@@ -43,7 +43,7 @@ function f_s_init() {
 	TODOTXT_FILE="${HOME}/Dropbox/Apps/Todotxt+/work.todo"
 	TODOTXT_DUE_DATE=$(date "+%F")
 
-	# Support case STATUS:
+	# Case STATUS:
 	INC_NEW_STATUS=""
 	INC_NEW="NEW"
 	INC_RSP="RESPONDED"
@@ -53,8 +53,8 @@ function f_s_init() {
 	INC_RWC="RESTORED WC"
 	INC_RES="RESOLVED"
 	INC_CLS="CLOSED"
-	INC_IP="In Progress"
-	INC_DONE="Done"
+	JIRA_IP="In Progress"
+	JIRA_DONE="Done"
 
 	##
 	# in case decision is made to distribute incident/h2s/jira issues to separate directories ./incidents; ./h2s; ./jira
@@ -103,9 +103,31 @@ function f_s_eoc() {
 	echo "###"
 	exit 0
 	} 
+function f_s_exit() {
+	# 
+	# Function Description here
 
-## getters/setters
+	# Keyword arguments:
+	# @param 1: return value
+	# @param 2: 1|0 skip
+	
+	# Return: void/false - if skip = 1
+	# 
+
+	if [[ $2 == 1 ]];then
+		return 1
+	else
+		log w "User abort"
+		f_s_eoc
+		exit $1
+	fi
+	} # eo f_s_exit
+
+## getters
 function f_get_user_consent() {
+	# $1 .. message
+	# $2 .. callback function
+	# $3 .. skip
 	if [[ -z $1 ]];then
 		message="Do You want to continue?"
 	else
@@ -117,11 +139,9 @@ function f_get_user_consent() {
 			log d "f_get_user_consent(): executing -> $2"
 			$($2)
 		fi
-		log w "User abort"
-		f_s_eoc
-		exit 0
+		echo $(f_s_exit 100 $3)
 	else
-		return
+		return 0
 	fi
 	}
 function f_get_inc_filter () {
@@ -157,7 +177,7 @@ function f_get_inc_filter () {
 		nlines=$(ls "$main_path" | grep "$id" | wc -l)
 	fi
 	log t "nlines: ${nlines}; grepped: ${grepped}"
-	main_path=$def_path/main
+	main_path=$def_path
 	} 
 function f_get_rename() {
 	# docstring
@@ -478,8 +498,8 @@ function f_get_status() {
 	# INC_RWC="restored WC"
 	# INC_RES="resolved"
 	# INC_CLS="closed"
-	# INC_IP="In Progress"
-	# INC_DONE="Done"
+	# JIRA_IP="In Progress"
+	# JIRA_DONE="Done"
 	if [[ $# -gt 2 ]];then
 		id=$2
 		__status=$3
@@ -496,8 +516,8 @@ function f_get_status() {
 		"rwc" )		INC_NEW_STATUS=${INC_RWC};;
 		"res" )		INC_NEW_STATUS=${INC_RES};;
 		"cls" )		INC_NEW_STATUS=${INC_CLS};;
-		"ip" )		INC_NEW_STATUS=${INC_IP};;
-		"done" )	INC_NEW_STATUS=${INC_DONE};;
+		"ip" )		INC_NEW_STATUS=${JIRA_IP};;
+		"done" )	INC_NEW_STATUS=${JIRA_DONE};;
 		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls | ip | done ]";;
 	esac
 	}
@@ -533,9 +553,12 @@ function f_get_listing_help() {
 	log i "[h]  ls -n		... ls -l incidents by name [crosscheck with ARS|Nikita]"	
 	log i "[h]  ls -24		... ls -rl 24x7 and Emergency incidents from $year"	
 	}
+# Setters
 function f_set_status() {
 	# Set correct case status
-	#
+	# $2 .. id
+	# $3 .. -s
+	# $4 .. new status
 	# return: void
 	[[ $# -gt 2 ]] && id=$2
 	f_get_inc_filter
@@ -697,6 +720,8 @@ function f_create_new_inc () {
 			stat=${arr_heat[2]}
 			cust=${arr_heat[3]}
 			desc=${arr_heat[6]//\//-}
+			desc=${desc//\[/-}
+			desc=${desc//\]/-}
 			rec_id=${arr_heat[7]}
 
 			echo "HEAT URI: "
@@ -967,6 +992,17 @@ function f_done() {
 	log i "DONE action in progress"
 	f_get_inc_filter
 	if [ $nlines -eq 1 ]; then
+		# Set status to INC_CLS
+		# echo $id
+		read -p "|  Set status to CLOSED(Y) or skip(n) [Y/n] " yn
+		case $yn in 
+			[Nn]* )
+				log i "Incident will NOT be updated."
+				;;
+			* )
+				f_set_status "" $id -s cls
+				;;
+		esac
 		log i "Sending inc $grepped"
 		log i "Waiting for user confirmation."
 		read -p "|  Do you really want to move this incident to $done_path folder? [Y/n] " yn
@@ -1061,7 +1097,7 @@ function f_args() {
 			f_get_id $grepped
 			return
 			;;
-		"--todotxt" ) #check soft link to ~/Downloads
+		"-t" | "--todotxt" ) #check soft link to ~/Downloads
 			if [ ! -z "$2" ];then
 				id=$2
 			fi
@@ -1127,7 +1163,7 @@ function f_args() {
 				return
 			fi
 			;;
-		"-t" | "team" ) #incident reassigned within team function
+		"--team" ) #incident reassigned within team function
 			if [ ! -z "$2" ];then
 				id=$2
 			fi
@@ -1240,13 +1276,13 @@ function f_ls() {
 				log i "list back2ops issues"
 				main_path=$backtoops_path
 				f_ls_prototype $@
-				main_path=$def_path/main
+				main_path=$def_path
 				;;
 			"-d" | "--done" )
 				log i "list DONE issues"
 				main_path=$done_path
 				f_ls_prototype $@
-				main_path=$def_path/main
+				main_path=$def_path
 				;;
 			"-h" )
 				f_args -lh
@@ -1472,7 +1508,7 @@ function f_check_links() {
 	for dirname in $(ls $main_path);do
 		if [[ $dirname == *"H2S"* ]];then
 			if [[ ! -d $h2s_path/$dirname ]];then
-			  EMPTY_OUTPUT=false
+				EMPTY_OUTPUT=false
 				ln -sfn $main_path/$dirname $h2s_path/$dirname
 				if [[ $? == 0 ]];then
 					log i "link for $dirname successfully created"
@@ -1482,7 +1518,7 @@ function f_check_links() {
 			fi
 		elif [[ $dirname == *"INC"* ]];then
 			if [[ ! -d $inc_path/$dirname ]];then
-			  EMPTY_OUTPUT=false
+				EMPTY_OUTPUT=false
 				ln -sfn $main_path/$dirname $inc_path/$dirname
 				if [[ $? == 0 ]];then
 					log i "link for $dirname successfully created"
@@ -1492,7 +1528,7 @@ function f_check_links() {
 			fi
 		elif [[ $dirname == *"DEV"* ]];then
 			if [[ ! -d $jira_path/$dirname ]];then
-			  EMPTY_OUTPUT=false
+				EMPTY_OUTPUT=false
 				ln -sfn $main_path/$dirname $jira_path/$dirname
 				if [[ $? == 0 ]];then
 					echo "[i] link for $dirname successfully created"
@@ -1612,6 +1648,7 @@ function f_todotxt() {
 ### Main {{
 f_s_init
 if [[ $1 == "--bashcompletion" ]];then
+	echo $@
 	if [[ $2 == "inc" ]] || [[ $2 == "ops" ]];then
 		if [[ $2 == "inc" ]];then
 			if [[ $3 == "-s" ]];then
@@ -1625,15 +1662,15 @@ if [[ $1 == "--bashcompletion" ]];then
 		if [[ $2 == "ops" ]];then
 			echo "-si"
 		fi
-		path_length=$(( ${#main_path} + 1 ))
-		for d in $(find $main_path -type d -maxdepth 1 | grep -v "${delim}DEV${delim}"); do
+		path_length=$(( ${#main_path} + 2 ))
+		for d in $(find $main_path/ -type d -maxdepth 1 | grep -v "${delim}DEV${delim}"); do
 			echo ${d:$path_length} | awk -F$delim '{print $1}'
 		done
 		unset d
 	elif [[ $2 == "dev" ]];then
 		echo "--todotxt"
-		path_length=$(( ${#main_path} + 1 ))
-		for d in $(find $main_path -type d -name "*DEV*" -maxdepth 1); do
+		path_length=$(( ${#main_path} + 2 ))
+		for d in $(find $main_path/ -type d -name "*DEV*" -maxdepth 1); do
 			echo ${d:$path_length} | awk -F$delim '{print $1}'
 		done
 		unset d
