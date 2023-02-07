@@ -716,9 +716,9 @@ function f_create_new_inc () {
 			IFS="|" read -a arr_heat <<< "$heat_res"
 			IFS=$OIFS
 
-			prio=${arr_heat[1]}
-			stat=${arr_heat[2]}
-			cust=${arr_heat[3]}
+			prio=${arr_heat[1]//\//-}
+			stat=${arr_heat[2]//\//-}
+			cust=${arr_heat[3]//\//-}
 			desc=${arr_heat[6]//\//-}
 			desc=${desc//\[/-}
 			desc=${desc//\]/-}

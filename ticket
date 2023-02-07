@@ -21,7 +21,7 @@ if [ "$#" -eq "$EXP_ARGS" ]; then
 		d=${path}/$(ls $path | grep $1)
 	fi
 	if [[ -f "${d}/ticket.ntx" ]] || [[ -f "${d}/ticket.txt" ]] || [[ -f "${d}/ticket.md" ]];then
-		mvim $d/ticket.*
+		${VIM} $d/ticket.*
 	elif [[ -d "${d}" ]];then
 		# echo $path/$d
 		read -p "This might overwrite things, creating new ticket.md here $d/"
