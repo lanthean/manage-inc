@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 ###
 #                                                                            oo                   
 #                                                                                               
@@ -38,7 +38,7 @@ function f_s_init() {
 	# LOG_DISABLED=true
 	LOG_FILE=$def_path/log/incidents.log
 
-	VIM=mvim
+	VIM=vim
 
 	TODOTXT_FILE="${HOME}/Dropbox/Apps/Todotxt+/work.todo"
 	TODOTXT_DUE_DATE=$(date "+%F")
@@ -704,70 +704,69 @@ function f_create_new_inc () {
 	# New incident
 	# Let's create a new incident
 	log i "Creating new incident"
-	
-	OIFS=$IFS
-	if [[ $id =~ ^[0-9]{6}$ ]];then
-		heat_res=$(~/bin/ops -i4b $id)
-		if [[ $heat_res != "404" ]];then
-			#
-			# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
-			# - returns "404" in case no incident owned by Customization Support team matched ${id}
-			# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
+	# OIFS=$IFS
+	# if [[ $id =~ ^[0-9]{6}$ ]];then
+	# 	heat_res=$(~/bin/ops -i4b $id)
+	# 	if [[ $heat_res != "404" ]];then
+	# 		#
+	# 		# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
+	# 		# - returns "404" in case no incident owned by Customization Support team matched ${id}
+	# 		# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
 
-			IFS="|" read -a arr_heat <<< "$heat_res"
-			IFS=$OIFS
+	# 		IFS="|" read -a arr_heat <<< "$heat_res"
+	# 		IFS=$OIFS
 
-			prio=${arr_heat[1]//\//-}
-			stat=${arr_heat[2]//\//-}
-			cust=${arr_heat[3]//\//-}
-			desc=${arr_heat[6]//\//-}
-			desc=${desc//\[/-}
-			desc=${desc//\]/-}
-			rec_id=${arr_heat[7]}
+	# 		prio=${arr_heat[1]//\//-}
+	# 		stat=${arr_heat[2]//\//-}
+	# 		cust=${arr_heat[3]//\//-}
+	# 		desc=${arr_heat[6]//\//-}
+	# 		desc=${desc//\[/-}
+	# 		desc=${desc//\]/-}
+	# 		rec_id=${arr_heat[7]}
 
-			echo "HEAT URI: "
-			echo "http://mavenir.saasit.com//Login.aspx?Scope=ObjectWorkspace&CommandId=Search&ObjectType=Incident%23&CommandData=RecId,%3D,0,${rec_id},string,AND|#"
-		else
-			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
-			log e "Case: ${id} does not exist in HEAT."
-			f_get_user_consent "Do you want to override?"
-		fi
-	elif [[ $id =~ ^CUS-[0-9]{4}$ ]];then
-		jira_res=$(~/bin/h2s -i4b $id)
-		if [[ $jira_res != "404" ]];then
-			#
-			# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
-			# - returns "404" in case no incident owned by Customization Support team matched ${id}
-			# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
+	# 		echo "HEAT URI: "
+	# 		echo "http://mavenir.saasit.com//Login.aspx?Scope=ObjectWorkspace&CommandId=Search&ObjectType=Incident%23&CommandData=RecId,%3D,0,${rec_id},string,AND|#"
+	# 	else
+	# 		# 404 encountered - no incident matching ${id} owned by Customization Support team found:
+	# 		log e "Case: ${id} does not exist in HEAT."
+	# 		f_get_user_consent "Do you want to override?"
+	# 	fi
+	# elif [[ $id =~ ^CUS-[0-9]{4}$ ]];then
+	# 	jira_res=$(~/bin/h2s -i4b $id)
+	# 	if [[ $jira_res != "404" ]];then
+	# 		#
+	# 		# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
+	# 		# - returns "404" in case no incident owned by Customization Support team matched ${id}
+	# 		# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
 
-			IFS="|" read -a arr_jira <<< "$jira_res"
-			IFS=$OIFS
+	# 		IFS="|" read -a arr_jira <<< "$jira_res"
+	# 		IFS=$OIFS
 
-			log d "jira_res=$jira_res"
-			prio=${arr_jira[1]}
-			log d "prio=$prio"
-			stat=${arr_jira[2]}
-			log d "stat=$stat"
-			cust=${arr_jira[3]}
-			log d "cust=$cust"
-			sfid=${arr_jira[4]}
-			log d "sfid=$sfid"
-			desc=${arr_jira[5]}
-			log d "desc=$desc"
-			rec_id=${arr_jira[0]}
-			log d "rec_id=$rec_id"
+	# 		log d "jira_res=$jira_res"
+	# 		prio=${arr_jira[1]}
+	# 		log d "prio=$prio"
+	# 		stat=${arr_jira[2]}
+	# 		log d "stat=$stat"
+	# 		cust=${arr_jira[3]}
+	# 		log d "cust=$cust"
+	# 		sfid=${arr_jira[4]}
+	# 		log d "sfid=$sfid"
+	# 		desc=${arr_jira[5]}
+	# 		log d "desc=$desc"
+	# 		rec_id=${arr_jira[0]}
+	# 		log d "rec_id=$rec_id"
 
-			JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
-			echo "JIRA URI: "
-			echo "${JIRA_URI}"
-			echo "desc: ${desc}"
-		else
-			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
-			log e "Case: ${id} does not exist in JIRA."
-			f_get_user_consent "Do you want to override?"
-		fi
-	fi
-	f_get_user_consent
+	# 		JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
+	# 		echo "JIRA URI: "
+	# 		echo "${JIRA_URI}"
+	# 		echo "desc: ${desc}"
+	# 	else
+	# 		# 404 encountered - no incident matching ${id} owned by Customization Support team found:
+	# 		log e "Case: ${id} does not exist in JIRA."
+	# 		f_get_user_consent "Do you want to override?"
+	# 	fi
+	# fi
+	# f_get_user_consent
 
 	f_readinp
 
@@ -1664,7 +1663,7 @@ if [[ $1 == "--bashcompletion" ]];then
 			echo "-si"
 		fi
 		path_length=$(( ${#main_path} + 2 ))
-		for d in $(find $main_path/ -type d -maxdepth 1 | grep -v "${delim}DEV${delim}"); do
+		for d in $(find $main_path/ -maxdepth 1 -type d | grep -v "${delim}DEV${delim}"); do
 			echo ${d:$path_length} | awk -F$delim '{print $1}'
 		done
 		unset d
