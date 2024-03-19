@@ -17,7 +17,7 @@
 ###
 
 timer_start=$(date +"%s%N")
-VERSION='2.2.4'
+VERSION='2.2.5'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 # available LOG_LEVEL values: t,d,i,w,e
@@ -39,6 +39,7 @@ function f_s_init() {
 	LOG_FILE=$def_path/log/incidents.log
 
 	VIM=mvim
+	TODOAPP=clickup
 
 	TODOTXT_FILE="${HOME}/Dropbox/Apps/Todotxt+/work.todo"
 	TODOTXT_DUE_DATE=$(date "+%F")
@@ -48,9 +49,9 @@ function f_s_init() {
 	INC_NEW="NEW"
 	INC_RSP="RESPONDED"
 	INC_ACT="ACTIVE"
-	INC_AWC="ACTIVE WC"
+	INC_AWC="ACTIVE WAITING FOR CUSTOMER"
 	INC_RST="RESTORED"
-	INC_RWC="RESTORED WC"
+	INC_RWC="RESTORED WAITING FOR CUSTOMER"
 	INC_RES="RESOLVED"
 	INC_CLS="CLOSED"
 	JIRA_IP="In Progress"
@@ -101,7 +102,6 @@ function f_s_eoc() {
 	[[ $# -eq 2 ]] && log "$1" "$2"
 	log t "f_s_eoc(): eof"
 	echo "###"
-	exit 0
 	} 
 function f_s_exit() {
 	# 
@@ -121,6 +121,7 @@ function f_s_exit() {
 		f_s_eoc
 		exit $1
 	fi
+	exit 0
 	} # eo f_s_exit
 
 ## getters
@@ -139,7 +140,7 @@ function f_get_user_consent() {
 			log d "f_get_user_consent(): executing -> $2"
 			$($2)
 		fi
-		echo $(f_s_exit 100 $3)
+		f_s_exit 100 $3
 	else
 		return 0
 	fi
@@ -532,7 +533,7 @@ function f_get_help() {
 	log i "[h] 				... e.g. \$ inc -s <inc_id> [ new | rsp | act | awc | rst | rwc | res | cls ]"
 	log i "[h] 				... also \$ inc <inc_id> -s [ new | rsp | act | awc | rst | rwc | res | cls ]"
 	log i "[h]  [-d] done			... move incident to ${done_path} folder"
-	log i "[h]  [-t|--todotxt] todotxt	... create task in ${TODOTXT_FILE}, if not yet created"
+	log i "[h]  [-t|--todo] todo		... create Todo task, if not yet created"
 	log i "[h]  [--team] team		... move incident to ${team_path} folder"
 	log i "[h]  [-b][bto] backtops		... move incident to ${backtoops_path} folder"
 	log i "[h]  [-u][rti] return 		... move incident back from ${backtoops_path}"
@@ -704,7 +705,6 @@ function f_create_new_inc () {
 	# New incident
 	# Let's create a new incident
 	log i "Creating new incident"
-	
 	OIFS=$IFS
 	if [[ $id =~ ^[0-9]{6}$ ]];then
 		heat_res=$(~/bin/ops -i4b $id)
@@ -812,8 +812,8 @@ function f_create_new_inc () {
       		# Create link to ~/Downloads
 			f_create_downloads_link ${ID}
 			
-			# Create TODOTXT+ task
-			f_todotxt ${ID}
+			# Create ToDo task
+			f_todo ${ID} ${TOPIC}
 			;;
 	esac
 	} 
@@ -1098,11 +1098,11 @@ function f_args() {
 			f_get_id $grepped
 			return
 			;;
-		"-t" | "--todotxt" ) #check soft link to ~/Downloads
+		"-t" | "--todo" ) #check soft link to ~/Downloads
 			if [ ! -z "$2" ];then
 				id=$2
 			fi
-			f_todotxt $id
+			f_todo $id
 			return
 			;;
 		"-dl" | "downloadlink" ) #check soft link to ~/Downloads
@@ -1330,17 +1330,17 @@ function f_ls() {
 				f_ls_prototype $@
 				return
 				;;
-			"--todotxt")
+			"--todo")
 				log i "Listing in todotxt format"
 				# case $1 in
 				# 	"li" )
-				# 		f_ls_prototype li --todotxt $3
+				# 		f_ls_prototype li --todo $3
 				# 		;;
 				# 	"ld" )
-				# 		f_ls_prototype ld --todotxt $3
+				# 		f_ls_prototype ld --todo $3
 				# 		;;
 				# 	"lh" )
-				# 		f_ls_prototype lh --todotxt $3
+				# 		f_ls_prototype lh --todo $3
 				# 		;;
 				# esac
 				f_ls_prototype $@
@@ -1375,7 +1375,7 @@ function f_ls_prototype() {
 		fi
 	elif [[ $2 == "-s" ]];then
 		grep=""
-	elif [[ $2 == "--todotxt" ]];then
+	elif [[ $2 == "--todo" ]];then
 		todotxt="todotxt"
 		if [[ $# > 2 ]];then
 			grep=$3
@@ -1600,7 +1600,7 @@ function f_id_as_first_argument() {
 					;;
 				[Tt]* ) 
 					log i "Todotxt+"
-					f_todotxt
+					f_todo
 					;;
 				* ) 
 					log i "Opening.."
@@ -1618,6 +1618,41 @@ function f_id_as_first_argument() {
 	fi #new/[i]rename/[e]multiple hit
 	main_path=$def_path
 	}
+
+function f_todo() {
+	# Handle creating/updating of a ToDo task
+	# either via TodoTXT (original usecase)
+	# or via ClickUp or any other provider / API
+	case $TODOAPP in
+ 	   	"clickup")
+			log d "f_todo(): running clickup manager"
+  	   		f_clickup $@;;
+ 	   	"todotxt")
+			log d "f_todo(): running todotxt manager"
+  	   		f_todotxt $@;;
+   		*)
+			log d "f_todo(): running default todo manager: clickup"
+    		f_clickup $@;;
+	esac
+} # eo: f_todo()
+
+function f_clickup() {
+	# use Clickup API to create/update task
+	curl_grepped=$(curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id)
+	if [[ $curl_grepped == 0 ]];then
+		log i "Creating clickup task"
+		log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"'"$id"'\", \"description\": \"\", \"markdown_description\": \"\",\"assignees\": [84124814],\"tags\": [\"incident\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
+
+		rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+
+		if [[ $($rc | grep -c err) != 0 ]];then
+			log e "f_clickup(): Clickup API issue - $rc"
+		fi
+	else
+		log w "Task already exists"
+		log i "Nothing to do - prehaps UPDATE operation might be considered here"
+	fi
+} # eo: f_clickup()
 function f_todotxt() {
 	# Handle todotxt task creation
 	[[ -z $1 ]] || id=$1 # if $1 supplied, fill id with the value
@@ -1656,7 +1691,7 @@ if [[ $1 == "--bashcompletion" ]];then
 				echo "new"; echo "rsp"; echo "act"; echo "awc"; echo "rst"; echo "rwc"; echo "res"; echo "cls"; echo "ip"
 				exit
 			elif [[ $3 == "args" ]];then
-				echo "--todotxt"; echo "-s"; echo "-d"; echo "-t"; echo "-r"; echo "-M"; echo "-u"; echo "-b"
+				echo "--todo"; echo "-s"; echo "-d"; echo "-t"; echo "-r"; echo "-M"; echo "-u"; echo "-b"
 				exit
 			fi
 		fi
@@ -1669,7 +1704,7 @@ if [[ $1 == "--bashcompletion" ]];then
 		done
 		unset d
 	elif [[ $2 == "dev" ]];then
-		echo "--todotxt"
+		echo "--todo"
 		path_length=$(( ${#main_path} + 2 ))
 		for d in $(find $main_path/ -type d -name "*DEV*" -maxdepth 1); do
 			echo ${d:$path_length} | awk -F$delim '{print $1}'

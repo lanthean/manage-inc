@@ -20,6 +20,9 @@
 # RN - Release Notes
 
 ```
+06/03/2024  -- Version 2.2.5
+            -- clickup API - create task
+            
 25/04/2022  -- Version 2.2.4
             -- todotxt can be now called from id_as_first_argument, like in below example
             -- e.g. inc 443545 + selecting [t] in wizard
