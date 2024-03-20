@@ -706,8 +706,9 @@ function f_create_new_inc () {
 	# Let's create a new incident
 	log i "Creating new incident"
 	OIFS=$IFS
-	if [[ $id =~ ^[0-9]{6}$ ]];then
+	if [[ $id =~ ^[0-9]{6,8}$ ]];then
 		heat_res=$(~/bin/ops -i4b $id)
+		log t "heat_res: $heat_res"
 		if [[ $heat_res != "404" ]];then
 			#
 			# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
@@ -720,11 +721,13 @@ function f_create_new_inc () {
 			prio=${arr_heat[1]//\//-}
 			stat=${arr_heat[2]//\//-}
 			cust=${arr_heat[3]//\//-}
+			cust=${cust// /_}
 			desc=${arr_heat[6]//\//-}
 			desc=${desc//\[/-}
 			desc=${desc//\]/-}
 			rec_id=${arr_heat[7]}
 
+			log t "prio: $prio, stat: $stat, cust: $cust, desc: $desc, rec_id: $rec_id"
 			echo "HEAT URI: "
 			echo "http://mavenir.saasit.com//Login.aspx?Scope=ObjectWorkspace&CommandId=Search&ObjectType=Incident%23&CommandData=RecId,%3D,0,${rec_id},string,AND|#"
 		else
