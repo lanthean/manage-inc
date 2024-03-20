@@ -721,7 +721,6 @@ function f_create_new_inc () {
 			prio=${arr_heat[1]//\//-}
 			stat=${arr_heat[2]//\//-}
 			cust=${arr_heat[3]//\//-}
-			cust=${cust// /_}
 			desc=${arr_heat[6]//\//-}
 			desc=${desc//\[/-}
 			desc=${desc//\]/-}
@@ -774,7 +773,7 @@ function f_create_new_inc () {
 
 	f_readinp
 
-	newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust}${delim}${desc// /_}
+	newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust// /_}${delim}${desc// /_}
 	log i "Waiting for user confirmation of new incident: $newinc"
 	read -p "|	Is it OK? [Y/n] " yn
 	case $yn in
@@ -816,7 +815,7 @@ function f_create_new_inc () {
 			f_create_downloads_link ${ID}
 			
 			# Create ToDo task
-			f_todo ${ID} ${TOPIC}
+			f_todo ${ID} ${TOPIC// /_}
 			;;
 	esac
 	} 
@@ -1590,7 +1589,7 @@ function f_id_as_first_argument() {
 			# and restart f_args
 			f_args "${_args[@]}"
 		else
-			echo "| Do you want to [O]pen ${id} or [r]ename or add to [t]odotxt it or [n]either?"
+			echo "| Do you want to [O]pen ${id} or [r]ename or add to [t]odo it or [n]either?"
 			read -p "| [O/t/r/n]: " orn
 			case $orn in
 				[Nn]* ) 
@@ -1626,6 +1625,8 @@ function f_todo() {
 	# Handle creating/updating of a ToDo task
 	# either via TodoTXT (original usecase)
 	# or via ClickUp or any other provider / API
+	# $1 = id
+	# $2 = description
 	case $TODOAPP in
  	   	"clickup")
 			log d "f_todo(): running clickup manager"
@@ -1641,12 +1642,14 @@ function f_todo() {
 
 function f_clickup() {
 	# use Clickup API to create/update task
+	id=$1
+	desc=$2
 	curl_grepped=$(curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id)
 	if [[ $curl_grepped == 0 ]];then
 		log i "Creating clickup task"
-		log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"'"$id"'\", \"description\": \"\", \"markdown_description\": \"\",\"assignees\": [84124814],\"tags\": [\"incident\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
+		log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $desc\", \"description\": \"\", \"markdown_description\": \"\",\"assignees\": [84124814],\"tags\": [\"incident\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
 
-		rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+		rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 
 		if [[ $($rc | grep -c err) != 0 ]];then
 			log e "f_clickup(): Clickup API issue - $rc"
