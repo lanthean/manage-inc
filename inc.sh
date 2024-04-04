@@ -298,7 +298,7 @@ function f_get_support_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $inc_file
 		else
-			printf "%-8s | %3s | %3s | %-15s | %-80s |%-7s |%-11s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
+			printf "%-8s | %3s | %3s | %-15s | %-100s | %-7s | %-11s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
 		fi
 	done 
 	}
@@ -436,7 +436,7 @@ function f_get_h2s_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $h2s_file
 		else
-			printf "%-8s | %3s | %3s | %-15s | %-60s |%-20s |%-13s |%13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${STATUS^^}" "$P" "$U" >> $h2s_file
+			printf "%-8s | %3s | %3s | %-15s | %-70s | %-20s | %-13s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${STATUS^^}" "$P" "$U" >> $h2s_file
 		fi
 		# printf "%-79s %-10s %13s %13s %13s\n" "$dir" "$STATUS" "$W" "$S" "$U" >>  $h2s_file
 		# if [[ $1 == "todotxt" ]];then
@@ -722,8 +722,7 @@ function f_create_new_inc () {
 			stat=${arr_heat[2]//\//-}
 			cust=${arr_heat[3]//\//-}
 			desc=${arr_heat[6]//\//-}
-			desc=${desc//\[/-}
-			desc=${desc//\]/-}
+			desc=${desc//[.,;\/\[\]]/-}
 			rec_id=${arr_heat[7]}
 
 			log t "prio: $prio, stat: $stat, cust: $cust, desc: $desc, rec_id: $rec_id"
@@ -815,7 +814,7 @@ function f_create_new_inc () {
 			f_create_downloads_link ${ID}
 			
 			# Create ToDo task
-			f_todo ${ID} ${TOPIC// /_}
+			f_todo ${ID} ${CUSTOMER// /_} ${TOPIC// /_}
 			;;
 	esac
 	} 
@@ -1643,13 +1642,14 @@ function f_todo() {
 function f_clickup() {
 	# use Clickup API to create/update task
 	id=$1
-	desc=$2
+	cust=$2
+	desc=$3
 	curl_grepped=$(curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id)
 	if [[ $curl_grepped == 0 ]];then
 		log i "Creating clickup task"
-		log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $desc\", \"description\": \"\", \"markdown_description\": \"\",\"assignees\": [84124814],\"tags\": [\"incident\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
+		log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"\",\"assignees\": [84124814],\"tags\": [\"incident\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
 
-		rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+		rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 
 		if [[ $($rc | grep -c err) != 0 ]];then
 			log e "f_clickup(): Clickup API issue - $rc"
