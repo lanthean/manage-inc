@@ -1,2 +1,7 @@
 inc
 *.x.c
+.DS_Store
+.vscode/
+bash_completion.d/dothis
+clickup.sh
+dothis
