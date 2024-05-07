@@ -720,9 +720,12 @@ function f_create_new_inc () {
 
 			prio=${arr_heat[1]//\//-}
 			stat=${arr_heat[2]//\//-}
+			org_cust=${arr_heat[3]}
 			cust=${arr_heat[3]//\//-}
+			cust=${cust//[.,;\/\[\]\(\) ]/-}
+			org_desc=${arr_heat[6]}
 			desc=${arr_heat[6]//\//-}
-			desc=${desc//[.,;\/\[\]]/-}
+			desc=${desc//[.,;\/\[\]\(\) ]/-}
 			rec_id=${arr_heat[7]}
 
 			log t "prio: $prio, stat: $stat, cust: $cust, desc: $desc, rec_id: $rec_id"
@@ -814,7 +817,7 @@ function f_create_new_inc () {
 			f_create_downloads_link ${ID}
 			
 			# Create ToDo task
-			f_todo ${ID} ${CUSTOMER// /_} ${TOPIC// /_}
+			f_todo ${ID} ${org_cust} ${org_desc}
 			;;
 	esac
 	} 
