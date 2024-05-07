@@ -28,46 +28,44 @@
 ##
 ```
 # %TOPIC%
-## [cust-desc] {{
+## [cust-desc]
 
-### [intake] {{
+### [intake]
 
-eo:intake}}
-eo:cust-desc}}
-## [connection] {{
+
+## [connection]
 cm %CUSTOMER%
-eo:connection}}
-## [system logs] {{
-### system log {{
+
+
+## [system logs]
+### system log
 ```sh
 ```
-eo: system log }}
-eo:system logs}}
-## [notes] {{
-### %DATE% {{
+
+## [notes]
+### %DATE%
 NEW
-#### update {{
+#### update
 ```email
 ```
-eo:update }}
-#### system log {{
+
+#### system log
 ```sh
 ```
-eo: system log }}
-###eo:%DATE% }}
-### xxx {{
-#### update {{
+
+
+### xxx
+#### update
 ```email
 ```
-eo:update }}
-#### system log {{
+
+#### system log
 ```sh
 ```
-eo: system log }}
-###eo:xxx }}
-##eo:notes}}
-## [close-notes] {{
-##eo:close-notes}}
+
+
+## [close-notes]
+
 ```
 # @EOF
 ##
