@@ -2,14 +2,14 @@
 # run make to compile and link to ~/bin
 
 compile:
-	@sh ./make/compile
+	@bash ./make/compile
 
 pre:
-	@sh ./make/pre
+	@bash ./make/pre
 
 all: pre compile
 
 clean:
-	@sh ./make/clean
+	@bash ./make/clean
 # EOF
 ##

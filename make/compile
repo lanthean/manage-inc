@@ -16,10 +16,19 @@ if [[ $(uname) == "Darwin" ]];then
     ln -sf ${PWD}/bash_completion.d/inc /opt/homebrew/etc/bash_completion.d/
     ln -sf ${PWD}/bash_completion.d/ops /opt/homebrew/etc/bash_completion.d/
 else
-    ln -sf ${PWD}/bash_completion.d/inc /etc/bash_completion.d/
-    ln -sf ${PWD}/bash_completion.d/ops /etc/bash_completion.d/
+    sudo ln -sf ${PWD}/bash_completion.d/inc /etc/bash_completion.d/
+    sudo ln -sf ${PWD}/bash_completion.d/ops /etc/bash_completion.d/
 fi
 echo "--- compile done"
+echo "--- source bash_completion"
+if [[ $(uname) == "Darwin" ]];then
+    source /opt/homebrew/etc/bash_completion.d/inc
+    source /opt/homebrew/etc/bash_completion.d/ops
+else
+    source /etc/bash_completion.d/inc
+    source /etc/bash_completion.d/ops
+fi
+echo "--- source bash_completion done"
 
 #EOF
 ###

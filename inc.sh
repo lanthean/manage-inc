@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 ###
 #                                                                            oo                   
 #                                                                                               
@@ -38,7 +38,7 @@ function f_s_init() {
 	# LOG_DISABLED=true
 	LOG_FILE=$def_path/log/incidents.log
 
-	VIM=mvim
+	VIM=vim
 	TODOAPP=clickup
 
 	TODOTXT_FILE="${HOME}/Dropbox/Apps/Todotxt+/work.todo"
@@ -49,9 +49,9 @@ function f_s_init() {
 	INC_NEW="NEW"
 	INC_RSP="RESPONDED"
 	INC_ACT="ACTIVE"
-	INC_AWC="ACTIVE WAITING FOR CUSTOMER"
+	INC_AWC="ACTIVE WC"
 	INC_RST="RESTORED"
-	INC_RWC="RESTORED WAITING FOR CUSTOMER"
+	INC_RWC="RESTORED WC"
 	INC_RES="RESOLVED"
 	INC_CLS="CLOSED"
 	JIRA_IP="In Progress"
@@ -70,7 +70,9 @@ function f_s_init() {
 	team_path=$main_path/team
 	delim="__"
 	id_def="xxxxxx000000xxxxxx"
-	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})|(CUS-[0-9]{4,})|([0-9]{6})"
+	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})|(CUS-[0-9]{4,})(CRQ-[0-9]{4,})|([0-9]{6})"
+	CRQ_MATCHED=0
+	CUS_MATCHED=0
 	id=$id_def
 	max_lines=999 #47
 
@@ -298,7 +300,7 @@ function f_get_support_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $inc_file
 		else
-			printf "%-8s | %3s | %3s | %-15s | %-100s | %-7s | %-11s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
+			printf "%-8s | %3s | %3s | %-25s | %-100s | %-7s | %-11s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
 		fi
 	done 
 	}
@@ -705,6 +707,9 @@ function f_create_new_inc () {
 	# New incident
 	# Let's create a new incident
 	log i "Creating new incident"
+	org_cust=""
+	org_desc=""
+
 	OIFS=$IFS
 	if [[ $id =~ ^[0-9]{6,8}$ ]];then
 		heat_res=$(~/bin/ops -i4b $id)
@@ -720,15 +725,13 @@ function f_create_new_inc () {
 
 			prio=${arr_heat[1]//\//-}
 			stat=${arr_heat[2]//\//-}
-			org_cust=${arr_heat[3]}
 			cust=${arr_heat[3]//\//-}
-			cust=${cust//[.,;\/\[\]\(\) ]/-}
-			org_desc=${arr_heat[6]}
+			org_cust=${cust// /-}
 			desc=${arr_heat[6]//\//-}
-			desc=${desc//[.,;\/\[\]\(\) ]/-}
+            org_desc=${desc// /-}
 			rec_id=${arr_heat[7]}
 
-			log t "prio: $prio, stat: $stat, cust: $cust, desc: $desc, rec_id: $rec_id"
+			log t "prio: $prio, stat: $stat, org_cust: $org_cust, cust: $cust, org_desc: $org_desc, desc: $desc, rec_id: $rec_id"
 			echo "HEAT URI: "
 			echo "http://mavenir.saasit.com//Login.aspx?Scope=ObjectWorkspace&CommandId=Search&ObjectType=Incident%23&CommandData=RecId,%3D,0,${rec_id},string,AND|#"
 		else
@@ -737,43 +740,84 @@ function f_create_new_inc () {
 			f_get_user_consent "Do you want to override?"
 		fi
 	elif [[ $id =~ ^CUS-[0-9]{4}$ ]];then
-		jira_res=$(~/bin/h2s -i4b $id)
-		if [[ $jira_res != "404" ]];then
-			#
-			# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
-			# - returns "404" in case no incident owned by Customization Support team matched ${id}
-			# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
+		# jira_res=$(~/bin/h2s -i4b $id)
+		CUS_MATCHED=1
+		# if [[ $jira_res != "404" ]];then
+		# 	#
+		# 	# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
+		# 	# - returns "404" in case no incident owned by Customization Support team matched ${id}
+		# 	# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
 
-			IFS="|" read -a arr_jira <<< "$jira_res"
-			IFS=$OIFS
+		# 	IFS="|" read -a arr_jira <<< "$jira_res"
+		# 	IFS=$OIFS
 
-			log d "jira_res=$jira_res"
-			prio=${arr_jira[1]}
-			log d "prio=$prio"
-			stat=${arr_jira[2]}
-			log d "stat=$stat"
-			cust=${arr_jira[3]}
-			log d "cust=$cust"
-			sfid=${arr_jira[4]}
-			log d "sfid=$sfid"
-			desc=${arr_jira[5]}
-			log d "desc=$desc"
-			rec_id=${arr_jira[0]}
-			log d "rec_id=$rec_id"
+		# 	log d "jira_res=$jira_res"
+		# 	prio=${arr_jira[1]}
+		# 	log d "prio=$prio"
+		# 	stat=${arr_jira[2]}
+		# 	log d "stat=$stat"
+		# 	cust=${arr_jira[3]}
+		# 	log d "cust=$cust"
+		# 	sfid=${arr_jira[4]}
+		# 	log d "sfid=$sfid"
+		# 	desc=${arr_jira[5]}
+		# 	log d "desc=$desc"
+		# 	rec_id=${arr_jira[0]}
+		# 	log d "rec_id=$rec_id"
 
-			JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
-			echo "JIRA URI: "
-			echo "${JIRA_URI}"
-			echo "desc: ${desc}"
-		else
-			# 404 encountered - no incident matching ${id} owned by Customization Support team found:
-			log e "Case: ${id} does not exist in JIRA."
-			f_get_user_consent "Do you want to override?"
-		fi
+		# 	JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
+		# 	echo "JIRA URI: "
+		# 	echo "${JIRA_URI}"
+		# 	echo "desc: ${desc}"
+		# else
+		# 	# 404 encountered - no incident matching ${id} owned by Customization Support team found:
+		# 	log e "Case: ${id} does not exist in JIRA."
+		# 	f_get_user_consent "Do you want to override?"
+		# fi
+	elif [[ $id =~ ^CRQ-[0-9]{4}$ ]];then
+		# jira_res=$(~/bin/h2s -i4b $id)
+		CRQ_MATCHED=1
+		# if [[ $jira_res != "404" ]];then
+		# 	#
+		# 	# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
+		# 	# - returns "404" in case no incident owned by Customization Support team matched ${id}
+		# 	# - or returns e.g. "438753|4|Active|KPN NL mVas|bortelm|Customization support|re-routing codes in SRI|C2E02EABF61947978310BD4CA5A5E353"
+
+		# 	IFS="|" read -a arr_jira <<< "$jira_res"
+		# 	IFS=$OIFS
+
+		# 	log d "jira_res=$jira_res"
+		# 	prio=${arr_jira[1]}
+		# 	log d "prio=$prio"
+		# 	stat=${arr_jira[2]}
+		# 	log d "stat=$stat"
+		# 	cust=${arr_jira[3]}
+		# 	log d "cust=$cust"
+		# 	sfid=${arr_jira[4]}
+		# 	log d "sfid=$sfid"
+		# 	desc=${arr_jira[5]}
+		# 	log d "desc=$desc"
+		# 	rec_id=${arr_jira[0]}
+		# 	log d "rec_id=$rec_id"
+
+		# 	JIRA_URI="https://at.mavenir.com/jira/browse/${rec_id}"
+		# 	echo "JIRA URI: "
+		# 	echo "${JIRA_URI}"
+		# 	echo "desc: ${desc}"
+		# else
+		# 	# 404 encountered - no incident matching ${id} owned by Customization Support team found:
+		# 	log e "Case: ${id} does not exist in JIRA."
+		# 	f_get_user_consent "Do you want to override?"
+		# fi
 	fi
 	f_get_user_consent
 
 	f_readinp
+
+	cust=${cust//[.,;\/\[\]\(\)+ ]/-}
+	desc=${desc//[.,;\/\[\]\(\)+ ]/-}
+	[[ "x${org_cust}x" == "xx" ]] && org_cust=$cust
+	[[ "x${org_desc}x" == "xx" ]] && org_desc=$desc
 
 	newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust// /_}${delim}${desc// /_}
 	log i "Waiting for user confirmation of new incident: $newinc"
@@ -804,7 +848,7 @@ function f_create_new_inc () {
 
 			# echo "$main_path/$newinc/ticket" v "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
 			# read -p "Press any key to continue"
-			$HOME/bin/newincf "$main_path/$newinc/ticket" mvim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS" "$LINK_TO"
+			$HOME/bin/newincf "$main_path/$newinc/ticket" vim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS" "$LINK_TO"
 
 			# f_check_links
 			if [ $? == 0 ]; then
@@ -817,6 +861,7 @@ function f_create_new_inc () {
 			f_create_downloads_link ${ID}
 			
 			# Create ToDo task
+			log d "f_todo ${ID} ${org_cust} ${org_desc}"
 			f_todo ${ID} ${org_cust} ${org_desc}
 			;;
 	esac
@@ -1093,6 +1138,19 @@ function f_team() {
 function f_args() { 
 	log t "f_args(): \$1=$1"
 	case $1 in
+		"-v" ) # set LOG_LEVEL
+			LOG_LEVEL="d"
+			source /opt/gbf/generic_bash_functions
+			shift
+			f_args $@
+			;;
+		"-vvv" ) # set LOG_LEVEL
+			LOG_LEVEL="t"
+			source /opt/gbf/generic_bash_functions
+			shift
+			f_args $@
+			;;
+
 		"--test" ) #check soft link to ~/Downloads
 			log t "f_args() - --test - \$2: ${2}"
 			if [[ -n $2 ]];then
@@ -1106,7 +1164,7 @@ function f_args() {
 			if [ ! -z "$2" ];then
 				id=$2
 			fi
-			f_todo $id
+			f_todo $@
 			return
 			;;
 		"-dl" | "downloadlink" ) #check soft link to ~/Downloads
@@ -1632,7 +1690,7 @@ function f_todo() {
 	case $TODOAPP in
  	   	"clickup")
 			log d "f_todo(): running clickup manager"
-  	   		f_clickup $@;;
+  	   		f_clickup $1 $2 $3;;
  	   	"todotxt")
 			log d "f_todo(): running todotxt manager"
   	   		f_todotxt $@;;
@@ -1647,12 +1705,21 @@ function f_clickup() {
 	id=$1
 	cust=$2
 	desc=$3
+	log t "id: $id"
+	log t "cust: $cust"
+	log t "desc: $desc"
 	curl_grepped=$(curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id)
 	if [[ $curl_grepped == 0 ]];then
 		log i "Creating clickup task"
 		log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"\",\"assignees\": [84124814],\"tags\": [\"incident\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
-
-		rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+		
+		if [[ $CRQ_MATCHED == 1 ]];then
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["crq"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+		elif [[ $CUS_MATCHED == 1 ]];then
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["jira"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+		else
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+		fi
 
 		if [[ $($rc | grep -c err) != 0 ]];then
 			log e "f_clickup(): Clickup API issue - $rc"
@@ -1708,9 +1775,13 @@ if [[ $1 == "--bashcompletion" ]];then
 			echo "-si"
 		fi
 		path_length=$(( ${#main_path} + 2 ))
-		for d in $(find $main_path/ -type d -maxdepth 1 | grep -v "${delim}DEV${delim}"); do
-			echo ${d:$path_length} | awk -F$delim '{print $1}'
+		#echo $main_path
+		# pushd $main_path
+		for d in $(find . -maxdepth 1 -type d | grep "${delim}INC${delim}"); do
+			#echo ${d:$path_length} | awk -F$delim '{print $1}'
+			echo ${d:2} | awk -F$delim '{print $1}'
 		done
+		# popd
 		unset d
 	elif [[ $2 == "dev" ]];then
 		echo "--todo"

@@ -7,13 +7,13 @@
 ###
 
 echo "--- Installing prerequisites"
-if [[ $(uname) == "Darwin" ]];then
+if [ $(uname) == "Darwin" ];then
     brew install shc
 
-elif [[ $(uname) == *"Ubuntu"* ]];then
-    apt install shc
+elif [ $(uname -v) == *"Ubuntu"* ];then
+    sudo apt install shc
 else
-    yum -y install shc
+    sudo yum -y install shc
 fi
 echo "--- pre done"
 
