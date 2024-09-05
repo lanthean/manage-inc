@@ -707,8 +707,8 @@ function f_create_new_inc () {
 	# New incident
 	# Let's create a new incident
 	log i "Creating new incident"
-	org_cust=""
-	org_desc=""
+	esc_cust=""
+	esc_desc=""
 
 	OIFS=$IFS
 	if [[ $id =~ ^[0-9]{6,8}$ ]];then
@@ -726,12 +726,12 @@ function f_create_new_inc () {
 			prio=${arr_heat[1]//\//-}
 			stat=${arr_heat[2]//\//-}
 			cust=${arr_heat[3]//\//-}
-			org_cust=${cust// /-}
+			esc_cust=${cust// /-}
 			desc=${arr_heat[6]//\//-}
-            org_desc=${desc// /-}
+            esc_desc=${desc// /-}
 			rec_id=${arr_heat[7]}
 
-			log t "prio: $prio, stat: $stat, org_cust: $org_cust, cust: $cust, org_desc: $org_desc, desc: $desc, rec_id: $rec_id"
+			log t "prio: $prio, stat: $stat, esc_cust: $esc_cust, cust: $cust, esc_desc: $esc_desc, desc: $desc, rec_id: $rec_id"
 			echo "HEAT URI: "
 			echo "http://mavenir.saasit.com//Login.aspx?Scope=ObjectWorkspace&CommandId=Search&ObjectType=Incident%23&CommandData=RecId,%3D,0,${rec_id},string,AND|#"
 		else
@@ -816,8 +816,8 @@ function f_create_new_inc () {
 
 	cust=${cust//[.,;\/\[\]\(\)+ ]/-}
 	desc=${desc//[.,;\/\[\]\(\)+ ]/-}
-	[[ "x${org_cust}x" == "xx" ]] && org_cust=$cust
-	[[ "x${org_desc}x" == "xx" ]] && org_desc=$desc
+	[[ "x${esc_cust}x" == "xx" ]] && esc_cust=$cust
+	[[ "x${esc_desc}x" == "xx" ]] && esc_desc=$desc
 
 	newinc=${id}${delim}${case_type}${delim}${team}${delim}${cust// /_}${delim}${desc// /_}
 	log i "Waiting for user confirmation of new incident: $newinc"
@@ -861,8 +861,8 @@ function f_create_new_inc () {
 			f_create_downloads_link ${ID}
 			
 			# Create ToDo task
-			log d "f_todo ${ID} ${org_cust} ${org_desc}"
-			f_todo ${ID} ${org_cust} ${org_desc}
+			log d "f_todo ${ID} ${esc_cust} ${esc_desc}"
+			f_todo ${ID} ${esc_cust} ${esc_desc}
 			;;
 	esac
 	} 
