@@ -34,12 +34,13 @@
 
 
 ## [connection]
-cm %CUSTOMER%
+cm %CONNECTION_MANAGER%
 
 
 ## [system logs]
 ### system log
 ```sh
+
 ```
 
 ## [notes]
@@ -47,20 +48,24 @@ cm %CUSTOMER%
 NEW
 #### update
 ```email
+
 ```
 
 #### system log
 ```sh
+
 ```
 
 
 ### xxx
 #### update
 ```email
+
 ```
 
 #### system log
 ```sh
+
 ```
 
 
