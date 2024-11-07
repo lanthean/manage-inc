@@ -267,6 +267,9 @@ function f_get_support_cases() {
 			U="${update:10:10}[U]"
 			STATUS="${status:10:14}"
 			PRIORITY="${priority:8:7}"
+			CI=$(cat $main_path/$dir/ticket.* | grep --text "@System")
+			CI="${CI:10:30}"
+			CI="${CI//[$'\r\n']}"
 		fi
 		if [ "$W" == "[W]" ];then
 			W="n/a[W]"
@@ -300,7 +303,7 @@ function f_get_support_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $inc_file
 		else
-			printf "%-8s | %3s | %3s | %-25s | %-100s | %-7s | %-11s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
+			printf "%-8s | %3s | %3s | %-25s | %-70s | %-30s | %-7s | %-11s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${CI}" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
 		fi
 	done 
 	}
@@ -845,10 +848,11 @@ function f_create_new_inc () {
 			RELEASE=${release}
 			CONTACT=${contact}
 			LINK_TO='https:\/\/at.mavenir.com\/jira\/browse\/'${rec_id}
+			CONNECTION_MANAGER=$(cm --list-locations | grep ${CUSTOMER})
 
 			# echo "$main_path/$newinc/ticket" v "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
 			# read -p "Press any key to continue"
-			$HOME/bin/newincf "$main_path/$newinc/ticket" vim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS" "$LINK_TO"
+			$HOME/bin/newincf "$main_path/$newinc/ticket" vim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS" "$LINK_TO" "$CONNECTION_MANAGER"
 
 			# f_check_links
 			if [ $? == 0 ]; then
