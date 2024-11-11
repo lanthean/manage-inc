@@ -1168,7 +1168,10 @@ function f_args() {
 			if [ ! -z "$2" ];then
 				id=$2
 			fi
-			f_todo $@
+			log t "f_args(): id=$id"
+			f_get_inc_filter
+			f_parse_inc_name $grepped
+			f_todo $id $cust $desc
 			return
 			;;
 		"-dl" | "downloadlink" ) #check soft link to ~/Downloads
@@ -1666,7 +1669,11 @@ function f_id_as_first_argument() {
 					;;
 				[Tt]* ) 
 					log i "Todotxt+"
-					f_todo
+					shift
+					id=$1
+					f_get_inc_filter
+					f_parse_inc_name $grepped
+					f_todo $id $cust $desc
 					;;
 				* ) 
 					log i "Opening.."
@@ -1690,16 +1697,17 @@ function f_todo() {
 	# either via TodoTXT (original usecase)
 	# or via ClickUp or any other provider / API
 	# $1 = id
-	# $2 = description
+	# $2 = customer
+	# $3 = description
 	case $TODOAPP in
  	   	"clickup")
-			log d "f_todo(): running clickup manager"
+			log d "f_todo(): running clickup manager - args: $1 $2 $3"
   	   		f_clickup $1 $2 $3;;
  	   	"todotxt")
 			log d "f_todo(): running todotxt manager"
   	   		f_todotxt $@;;
    		*)
-			log d "f_todo(): running default todo manager: clickup"
+			log d "f_todo(): running default todo manager: clickup - args: $@"
     		f_clickup $@;;
 	esac
 } # eo: f_todo()
@@ -1712,6 +1720,7 @@ function f_clickup() {
 	log t "id: $id"
 	log t "cust: $cust"
 	log t "desc: $desc"
+	# exit 1
 	curl_grepped=$(curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id)
 	if [[ $curl_grepped == 0 ]];then
 		log i "Creating clickup task"
