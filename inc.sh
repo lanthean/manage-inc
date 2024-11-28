@@ -39,7 +39,7 @@ function f_s_init() {
 	LOG_FILE=$def_path/log/incidents.log
 
 	VIM=vim
-	TODOAPP=clickup
+	TODOAPP=all
 
 	TODOTXT_FILE="${HOME}/Dropbox/Apps/Todotxt+/work.todo"
 	TODOTXT_DUE_DATE=$(date "+%F")
@@ -1715,8 +1715,11 @@ function f_todo() {
 			log d "f_todo(): running todotxt manager"
   	   		f_todotxt $@;;
    		*)
-			log d "f_todo(): running default todo manager: clickup - args: $@"
-    		f_clickup $@;;
+			log d "f_todo(): running default todo manager: todotxt - args: $@"
+			f_todotxt $@
+    		log d "f_todo(): running default todo manager: clickup - args: $1 $2 $3"
+			f_clickup $1 $2 $3
+			;;
 	esac
 } # eo: f_todo()
 
@@ -1732,13 +1735,15 @@ function f_clickup() {
 	curl_grepped=$(curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id)
 	if [[ $curl_grepped == 0 ]];then
 		log i "Creating clickup task"
-		log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"\",\"assignees\": [84124814],\"tags\": [\"incident\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
 		
 		if [[ $CRQ_MATCHED == 1 ]];then
-			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["crq"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"[$id](https://at.mavenir.com/jira/browse/$id) - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"[$id](https://at.mavenir.com/jira/browse/$id)\",\"assignees\": [84124814],\"tags\": [\"crq\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "['$id'](https://at.mavenir.com/jira/browse/'$id') - '$cust' - '$desc'", "description": "", "markdown_description": "['$id'](https://at.mavenir.com/jira/browse/'$id')","assignees": [84124814],"tags": ["crq"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 		elif [[ $CUS_MATCHED == 1 ]];then
-			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["jira"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"[$id](https://at.mavenir.com/jira/browse/$id)\",\"assignees\": [84124814],\"tags\": [\"jira\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "['$id'](https://at.mavenir.com/jira/browse/'$id')","assignees": [84124814],"tags": ["jira"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 		else
+			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}'"
 			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 		fi
 
@@ -1769,9 +1774,14 @@ function f_todotxt() {
 		if [[ $(cat $TODOTXT_FILE | grep -ve "^x" | grep -e "${id}.*due:${TODOTXT_DUE_DATE}" | wc -l) > 0 ]];then
 			log e "f_todotxt(): ${TODOTXT_FILE} already contain task with case ID #${id} and due:${TODOTXT_DUE_DATE}"
 		else
-			log i "${TODOTXT_FILE} file was updated with case ID: #${id} and DUE: ${TODOTXT_DUE_DATE}"
-			log t "f_todotxt(): '@${__case_type,,} +${id} ${__cust} ${__desc} due:${TODOTXT_DUE_DATE} rec:1d' >> $TODOTXT_FILE"
-			echo "@${__case_type,,} +${id} ${__cust} ${__desc} due:${TODOTXT_DUE_DATE} rec:1d" >> $TODOTXT_FILE
+			if [[ $CRQ_MATCHED == 1 ]];then 
+				TODOTXT_CONTEXT="CRQ"
+			else
+				TODOTXT_CONTEXT="${__case_type,,}"
+			fi
+			log t "f_todotxt(): '${__desc} ${__cust} +${id} @${TODOTXT_CONTEXT} @TODO due:${TODOTXT_DUE_DATE}' >> $TODOTXT_FILE"
+			echo "${__desc} ${__cust} +${id} @${TODOTXT_CONTEXT} @TODO due:${TODOTXT_DUE_DATE}" >> $TODOTXT_FILE
+			log i "${TODOTXT_FILE} file was updated with: '${__desc} ${__cust} +${id} @${TODOTXT_CONTEXT} @TODO due:${TODOTXT_DUE_DATE}'"
 		fi
 	else
 		log e "f_todotxt(): todotxt file (${TODOTXT_FILE}) does not exist"
