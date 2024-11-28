@@ -71,6 +71,7 @@ function f_s_init() {
 	delim="__"
 	id_def="xxxxxx000000xxxxxx"
 	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})|(CUS-[0-9]{4,})(CRQ-[0-9]{4,})|([0-9]{6})"
+	INC_MATCHED=0
 	CRQ_MATCHED=0
 	CUS_MATCHED=0
 	id=$id_def
@@ -179,6 +180,15 @@ function f_get_inc_filter () {
 		grepped=$(ls "$main_path" | grep "$id")
 		nlines=$(ls "$main_path" | grep "$id" | wc -l)
 	fi
+
+	if [[ $id =~ ^[0-9]{6,8}$ ]];then
+		INC_MATCHED=1
+	elif [[ $id =~ ^CUS-[0-9]{4}$ ]];then
+		CUS_MATCHED=1
+	elif [[ $id =~ ^CRQ-[0-9]{4}$ ]];then
+		CRQ_MATCHED=1
+	fi
+
 	log t "nlines: ${nlines}; grepped: ${grepped}"
 	main_path=$def_path
 	} 
@@ -213,6 +223,7 @@ function f_get_rename() {
 			;;
 		[Cc] )
 			read -p "|	Enter new Customer: " cust
+			cust=${cust//[.,;:\/\[\]\(\)+ ]/-}
 			log t "cust: $cust"
 			cust_ch=1
 			f_get_rename
@@ -224,10 +235,8 @@ function f_get_rename() {
 			f_get_rename
 			;;
 		[Dd] )
-			read -p "|	Enter new Description: " desc_raw
-			desc=${desc_raw// /_}
-			desc=${desc//\//-}
-			log t "desc_raw: $desc_raw"
+			read -p "|	Enter new Description: " desc
+			desc=${desc//[.,;:\/\[\]\(\)+ ]/-}
 			log t "desc: $desc"
 			desc_ch=1
 			f_get_rename
@@ -483,10 +492,6 @@ function f_get_case_type() {
 		"D"* )
 			case_type="DEV"
 		;;
-		# "" )
-		# 	[ $id == *"CUS-"* ] && case_type="DEV"
-		# 	[ $id == *"CUS-"* ] || case_type="INC"
-		# ;;
 		* )
 			case_type="INC"
 		;;
@@ -591,9 +596,9 @@ function f_set_status() {
 ## Functions
 function f_readinp() { 
 	## Read user's input
-	case_type="INC"
 	team="CUS" #read -p "|	Team (SMSC/CUST): " team
-	read -p "| 	Type ([Ii]NC, [Hh]2S, [Dd]EV) [default = INC]: " case_type
+	[ "x${case_type}x" == "xx" ] &&  case_type="INC"
+	read -p "| 	Type ([Ii]NC, [Hh]2S, [Dd]EV) [${case_type}]: " _case_type
 	read -p "|	Customer [${cust}]: " _cust
 	read -p "|	Short description of the incident [${desc}]: " _desc
 	read -p "|	Priority of the incident [${prio}]: " _prio
@@ -603,11 +608,12 @@ function f_readinp() {
 	read -p "|	Release: " release
 	read -p "|	SF-ID [${sfid}]: " _sfid
 
-	[ "$_cust" != "" ] &&  cust=$_cust
-	[ "$_desc" != "" ] &&  desc=$_desc
-	[ "$_prio" != "" ] &&  prio=$_prio
-	[ "$_stat" != "" ] &&  stat=$_stat
-	[ "$_sfid" != "" ] &&  sfid=$_sfid
+	[ "x${_case_type}x" != "xx" ] &&  case_type=$_case_type
+	[ "x${_cust}x" != "xx" ] &&  cust=$_cust
+	[ "x${_desc}x" != "xx" ] &&  desc=$_desc
+	[ "x${_prio}x" != "xx" ] &&  prio=$_prio
+	[ "x${_stat}x" != "xx" ] &&  stat=$_stat
+	[ "x${_sfid}x" != "xx" ] &&  sfid=$_sfid
 
 	# Set proper case_type from input
 	f_get_case_type
@@ -715,6 +721,7 @@ function f_create_new_inc () {
 
 	OIFS=$IFS
 	if [[ $id =~ ^[0-9]{6,8}$ ]];then
+		INC_MATCHED=1
 		heat_res=$(~/bin/ops -i4b $id)
 		log t "heat_res: $heat_res"
 		if [[ $heat_res != "404" ]];then
@@ -780,6 +787,7 @@ function f_create_new_inc () {
 	elif [[ $id =~ ^CRQ-[0-9]{4}$ ]];then
 		# jira_res=$(~/bin/h2s -i4b $id)
 		CRQ_MATCHED=1
+		case_type="D"
 		# if [[ $jira_res != "404" ]];then
 		# 	#
 		# 	# ssh://git@bb.mavenir.com:7999/~bortelm/bortelm_tools.git @devops-tools $(ops -i4b ${id})
@@ -813,12 +821,12 @@ function f_create_new_inc () {
 		# 	f_get_user_consent "Do you want to override?"
 		# fi
 	fi
-	f_get_user_consent
+	#f_get_user_consent
 
 	f_readinp
 
-	cust=${cust//[.,;\/\[\]\(\)+ ]/-}
-	desc=${desc//[.,;\/\[\]\(\)+ ]/-}
+	cust=${cust//[.,;:\/\[\]\(\)+ ]/-}
+	desc=${desc//[.,;:\/\[\]\(\)+ ]/-}
 	[[ "x${esc_cust}x" == "xx" ]] && esc_cust=$cust
 	[[ "x${esc_desc}x" == "xx" ]] && esc_desc=$desc
 
