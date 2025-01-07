@@ -17,7 +17,7 @@
 ###
 
 timer_start=$(date +"%s%N")
-VERSION='2.2.5'
+VERSION='2.2.6'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
 # available LOG_LEVEL values: t,d,i,w,e
@@ -277,7 +277,7 @@ function f_get_support_cases() {
 			STATUS="${status:10:14}"
 			PRIORITY="${priority:8:7}"
 			CI=$(cat $main_path/$dir/ticket.* | grep --text "@System")
-			CI="${CI:10:30}"
+			CI="${CI:10:40}"
 			CI="${CI//[$'\r\n']}"
 		fi
 		if [ "$W" == "[W]" ];then
@@ -312,7 +312,7 @@ function f_get_support_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $inc_file
 		else
-			printf "%-8s | %3s | %3s | %-25s | %-70s | %-30s | %-7s | %-11s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${CI}" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
+			printf "%-8s | %3s | %3s | %-20s | %-82s | %-40s | %-3s | %-11s | %13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "${CI}" "$PRIORITY" "${STATUS^^}" "$U" >> $inc_file
 		fi
 	done 
 	}
@@ -374,7 +374,7 @@ function f_get_development_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $jira_file
 		else
-			printf "%-8s | %3s | %3s | %-20s | %-80s |%-13s |%-13s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$S" "$U" >> $jira_file
+			printf "%-8s | %3s | %3s | %-20s | %-110s |%-10s |%-8s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$STATUS" "$U" >> $jira_file
 		fi
 	done 
 	}
@@ -601,11 +601,11 @@ function f_readinp() {
 	read -p "| 	Type ([Ii]NC, [Hh]2S, [Dd]EV) [${case_type}]: " _case_type
 	read -p "|	Customer [${cust}]: " _cust
 	read -p "|	Short description of the incident [${desc}]: " _desc
-	read -p "|	Priority of the incident [${prio}]: " _prio
-	read -p "|	Status of the incident [${stat}]: " _stat
+	[[ $INC_MATCHED == 1 ]] && read -p "|	Priority of the incident [${prio}]: " _prio
+	[[ $INC_MATCHED == 1 ]] && read -p "|	Status of the incident [${stat}]: " _stat
 	read -p "|	Contact: " contact
-	read -p "|	Systems: " systems
-	read -p "|	Release: " release
+	[[ $INC_MATCHED == 1 ]] && read -p "|	Systems: " systems
+	[[ $INC_MATCHED == 1 ]] && read -p "|	Release: " release
 	read -p "|	SF-ID [${sfid}]: " _sfid
 
 	[ "x${_case_type}x" != "xx" ] &&  case_type=$_case_type
@@ -624,11 +624,23 @@ function f_create_downloads_link() {
 
 	physical_directory=$(ls ${main_path} | grep ${_id})
 	if [[ $physical_directory == *"${delim}H2S${delim}"* ]];then
-		downloads_path="${user_downloads}/h2s"
+		downloads_path="${user_downloads}/inc/h2s"
 	elif [[ $physical_directory == *$"${delim}DEV${delim}"* ]];then
-		downloads_path="${user_downloads}/dev"
+		downloads_path="${user_downloads}/inc/dev"
 	else
 		downloads_path="${user_downloads}/inc"
+	fi
+	
+	if [[ -d $downloads_path ]];then
+		log t "f_create_downloads_link(): downloads_path exists"
+	else
+	 	log w "Downloads path does not exist: $downloads_path, attemting to create it"
+		mkdir -p $downloads_path
+		if [[ $? == 0 ]];then
+			log t "f_create_downloads_link(): mkdir -p $downloads_path - success"
+		else
+			log t "f_create_downloads_link(): mkdir -p $downloads_path - fail"
+		fi
 	fi
 	log t "id: ${_id}"
 	log t "main_path: ${main_path}"
@@ -654,7 +666,7 @@ function f_create_downloads_link() {
 function f_update_downloads_link_to_done() {
 	id=$1
 	if [[ $id == *"H2S"* ]];then
-		downloads_path="${user_downloads}/h2s"
+		downloads_path="${user_downloads}/inc/h2s"
 		id=${id:4}
 	else
 		downloads_path="${user_downloads}/inc"
@@ -670,9 +682,9 @@ function f_update_downloads_link_to_done() {
 			log e "Link to ${downloads_path}/${id} was not updated"
 		fi
 	elif [[ -d $downloads_path/$id ]];then
-    log w "There is a directory in place of the new link location - reversing"
-    log t "ln -sfn $downloads_path/$id $done_path/$physical_directory/"
-    ln -sfn $downloads_path/$id $done_path/$physical_directory/
+		log w "There is a directory in place of the new link location - reversing"
+		log t "ln -sfn $downloads_path/$id $done_path/$physical_directory/"
+		ln -sfn $downloads_path/$id $done_path/$physical_directory/
 	fi
 	}
 function f_remove_downloads_link() {
@@ -827,6 +839,7 @@ function f_create_new_inc () {
 
 	cust=${cust//[.,;:\/\[\]\(\)+ ]/-}
 	desc=${desc//[.,;:\/\[\]\(\)+ ]/-}
+	contact=${contact//[.,;:\/\[\]\(\)+ ]/-}
 	[[ "x${esc_cust}x" == "xx" ]] && esc_cust=$cust
 	[[ "x${esc_desc}x" == "xx" ]] && esc_desc=$desc
 
@@ -1079,11 +1092,11 @@ function f_done() {
 				mv ${main_path}/$grepped $done_path
 				if [[ $? -eq 0 ]];then
 					log i "Inc moved to $done_path folder with success"
-	        log i "Update inc link in ${user_downloads}/inc"
-	        log t "grepped: ${grepped}"
-	        inc_arr=$(f_parse_inc_name $grepped)
-	        log t "id: ${inc_arr[0]}"
-	        f_update_downloads_link_to_done ${inc_arr[0]}
+					log i "Update inc link in ${user_downloads}/inc"
+					log t "grepped: ${grepped}"
+					inc_arr=$(f_parse_inc_name $grepped)
+					log t "id: ${inc_arr[0]}"
+			        f_update_downloads_link_to_done ${inc_arr[0]}
 				else
 					log e "Moving failed. Please try manually."
 					log e "mv ${main_path}/${grepped} ${done_path}"
@@ -1444,11 +1457,15 @@ function f_ls_prototype() {
 	h2s_file=/tmp/h2s.manage-inc
 	log t "f_ls_prototype() - \$1=$1; \$2=$2; \$3=$3; "
 
+	li_sort="sort -t | -k8,8 -k7,7 -k6,6 -k1,1 -k3,3"
+	lj_sort="sort -t | -k7,7 -k1,1 -k3,3"
+	lh_sort="sort -t | -k8,8 -k1,1 -k3,3"
 	if [ "$2" == "-bto" -o "$2" == "-b" -o "$2" == "-d" -o "$2" == "--done" ]; then
 		grep=$3
 		if [[ $2 == "-d" ]] || [[ $2 == "--done" ]];then
 			main_path=$done_path
 			title_suffix="[DONE]"
+			li_sort="sort -t | -k9,9"		
 		fi
 	elif [[ $2 == "-s" ]];then
 		grep=""
@@ -1461,9 +1478,6 @@ function f_ls_prototype() {
 		todotxt=""
 		grep=$2
 	fi
-	li_sort="sort -t | -k8,8 -k7,7 -k6,6 -k1,1 -k3,3"
-	lj_sort="sort -t | -k7,7 -k1,1 -k3,3"
-	lh_sort="sort -t | -k8,8 -k1,1 -k3,3"
 	if [[ $grep != "" ]];then
 		str_search="- search: ${grep}"
 	fi
@@ -1738,13 +1752,13 @@ function f_clickup() {
 		
 		if [[ $CRQ_MATCHED == 1 ]];then
 			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"[$id](https://at.mavenir.com/jira/browse/$id) - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"[$id](https://at.mavenir.com/jira/browse/$id)\",\"assignees\": [84124814],\"tags\": [\"crq\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
-			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "['$id'](https://at.mavenir.com/jira/browse/'$id') - '$cust' - '$desc'", "description": "", "markdown_description": "['$id'](https://at.mavenir.com/jira/browse/'$id')","assignees": [84124814],"tags": ["crq"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "['$id'](https://at.mavenir.com/jira/browse/'$id') - '$cust' - '$desc'", "description": "['$id'](file://'$downloads_path/$id')", "markdown_description": "['$id'](https://at.mavenir.com/jira/browse/'$id')","assignees": [84124814],"tags": ["crq"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 		elif [[ $CUS_MATCHED == 1 ]];then
 			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"[$id](https://at.mavenir.com/jira/browse/$id)\",\"assignees\": [84124814],\"tags\": [\"jira\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
-			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "['$id'](https://at.mavenir.com/jira/browse/'$id')","assignees": [84124814],"tags": ["jira"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "['$id'](file://'$downloads_path/$id')", "markdown_description": "['$id'](https://at.mavenir.com/jira/browse/'$id')","assignees": [84124814],"tags": ["jira"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 		else
 			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}'"
-			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "['$id'](file://'$downloads_path/$id')", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 		fi
 
 		if [[ $($rc | grep -c err) != 0 ]];then

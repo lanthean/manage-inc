@@ -20,6 +20,9 @@
 # RN - Release Notes
 
 ```
+07/01/2025  -- Version 2.2.6
+            -- bugfixes; clickup API description to hold link to folder on disk (`file://`)
+            
 06/03/2024  -- Version 2.2.5
             -- clickup API - create task
             
