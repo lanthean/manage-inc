@@ -1491,17 +1491,17 @@ function f_ls_prototype() {
 	 	f_get_h2s_cases $todotxt
 		echo "| Customization Support ${str_search}"
 		cat $inc_file | $li_sort
-    log i "Number of active #$(wc -l $inc_file)"
+    	log i "Number of support cases #$(wc -l $inc_file)"
 
 		echo ""
 		echo "| JIRA issues / Development ${str_search}"
 		cat $jira_file | $lj_sort
-    log i "Number of active #$(wc -l $jira_file)"
+    	log i "Number of dev tasks #$(wc -l $jira_file)"
 
 		echo ""
 		echo "| H2S's  ${str_search}"
 		cat $h2s_file | $lh_sort
-    log i "Number of active #$(wc -l $h2s_file)"
+    	log i "Number of h2s tasks #$(wc -l $h2s_file)"
 		;;
 	"li")
 		f_get_support_cases $todotxt
@@ -1510,13 +1510,13 @@ function f_ls_prototype() {
 					# \n$(cat $inc_file | sort --debug -k7.8nr -k7.5nr -k7.2nr -k4 -k 1,1)"
 		log i "Customization Support ${title_suffix}  ${str_search}"
 		cat $inc_file | $li_sort
-	    log i "Number of active #$(wc -l $inc_file)"
+	    log i "Number of support cases #$(wc -l $inc_file)"
 		;;
 	"lj" | "ld")
 	 	f_get_development_cases $todotxt
 		log i "Customization JIRA  ${str_search}"
 		cat $jira_file | $lj_sort
-    	log i "Number of active #$(wc -l $jira_file)"
+    	log i "Number of dev tasks #$(wc -l $jira_file)"
 		;;
 	"lh")
 	 	f_get_h2s_cases $todotxt
@@ -1531,7 +1531,7 @@ function f_ls_prototype() {
 			log i "Customization H2S ${str_search}"
 			cat $h2s_file | $lh_sort
 		fi
-    log i "Number of active #${case_count}"
+    	log i "Number of h2s tasks #${case_count}"
 		;;
 	* )
 		# Incidents
