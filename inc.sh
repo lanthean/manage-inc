@@ -72,6 +72,7 @@ function f_s_init() {
 	id_def="xxxxxx000000xxxxxx"
 	INC_MATCH="(INC[0-9]{8})|(CS[0-9]{8})|(CUS-[0-9]{4,})(CRQ-[0-9]{4,})|([0-9]{6})"
 	INC_MATCHED=0
+	H2S_MATCHED=0
 	CRQ_MATCHED=0
 	CUS_MATCHED=0
 	id=$id_def
@@ -488,6 +489,7 @@ function f_get_case_type() {
 	case $case_type in
 		"H"* )
 			case_type="H2S"
+			H2S_MATCHED=1
 		;;
 		"D"* )
 			case_type="DEV"
@@ -1757,8 +1759,13 @@ function f_clickup() {
 			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ \"name\": \"$id - $cust - $desc\", \"description\": \"\", \"markdown_description\": \"[$id](https://at.mavenir.com/jira/browse/$id)\",\"assignees\": [84124814],\"tags\": [\"jira\"],\"status\": \"TO DO\",\"priority\": 3,\"notify_all\": true,\"parent\": null,\"links_to\": null,\"check_required_custom_fields\": true}'"
 			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "['$id'](file://'$downloads_path/$id')", "markdown_description": "['$id'](https://at.mavenir.com/jira/browse/'$id')","assignees": [84124814],"tags": ["jira"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
 		else
-			log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}'"
-			rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "['$id'](file://'$downloads_path/$id')", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			if [[ $H2S_MATCHED == 1 ]];then
+				log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident,h2s"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}'"
+				rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "['$id'](file://'$downloads_path/$id')", "markdown_description": "","assignees": [84124814],"tags": ["incident, h2s"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			else
+				log t "f_clickup(): curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}'"
+				rc=$(curl -i -X POST 'https://api.clickup.com/api/v2/list/901500674177/task?custom_task_ids=true&team_id=123' -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' -H 'Content-Type: application/json' -d '{ "name": "'$id' - '$cust' - '$desc'", "description": "['$id'](file://'$downloads_path/$id')", "markdown_description": "","assignees": [84124814],"tags": ["incident"],"status": "TO DO","priority": 3,"notify_all": true,"parent": null,"links_to": null,"check_required_custom_fields": true}')
+			fi
 		fi
 
 		if [[ $($rc | grep -c err) != 0 ]];then
