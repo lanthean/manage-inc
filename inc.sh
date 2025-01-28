@@ -55,7 +55,15 @@ function f_s_init() {
 	INC_RES="RESOLVED"
 	INC_CLS="CLOSED"
 	JIRA_IP="In Progress"
-	JIRA_DONE="Done"
+	JIRA_WA="WAITING"
+	JIRA_AA="AWAIT AS"
+	JIRA_AP="AWAIT PO"
+	JIRA_AR="IN RMAP"
+	JIRA_ID="IN DEVEL"
+	JIRA_DE="DEVELOPED"
+	JIRA_OH="ON HOLD"
+	JIRA_RJ="REJECTED"
+	JIRA_DO="DONE"
 
 	##
 	# in case decision is made to distribute incident/h2s/jira issues to separate directories ./incidents; ./h2s; ./jira
@@ -375,7 +383,7 @@ function f_get_development_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $jira_file
 		else
-			printf "%-8s | %3s | %3s | %-20s | %-110s |%-10s |%-8s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$STATUS" "$U" >> $jira_file
+			printf "%-8s | %3s | %3s | %-30s | %-120s |%-10s |%-8s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$STATUS" "$U" >> $jira_file
 		fi
 	done 
 	}
@@ -512,7 +520,15 @@ function f_get_status() {
 	# INC_RES="resolved"
 	# INC_CLS="closed"
 	# JIRA_IP="In Progress"
-	# JIRA_DONE="Done"
+	# JIRA_WA="WAITING"
+	# JIRA_AA="AWAIT AS"
+	# JIRA_AP="AWAIT PO"
+	# JIRA_AR="IN RMAP"
+	# JIRA_ID="IN DEVEL"
+	# JIRA_DE="DEVELOPED"
+	# JIRA_OH="ON HOLD"
+	# JIRA_RJ="REJECTED"
+	# JIRA_DO="DONE"
 	if [[ $# -gt 2 ]];then
 		id=$2
 		__status=$3
@@ -530,8 +546,16 @@ function f_get_status() {
 		"res" )		INC_NEW_STATUS=${INC_RES};;
 		"cls" )		INC_NEW_STATUS=${INC_CLS};;
 		"ip" )		INC_NEW_STATUS=${JIRA_IP};;
-		"done" )	INC_NEW_STATUS=${JIRA_DONE};;
-		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls | ip | done ]";;
+		"wa" )		INC_NEW_STATUS=${JIRA_WA};;
+		"aa" )		INC_NEW_STATUS=${JIRA_AA};;
+		"ap" )		INC_NEW_STATUS=${JIRA_AP};;
+		"ar" )		INC_NEW_STATUS=${JIRA_AR};;
+		"id" )		INC_NEW_STATUS=${JIRA_ID};;
+		"de" )		INC_NEW_STATUS=${JIRA_DE};;
+		"oh" )		INC_NEW_STATUS=${JIRA_OH};;
+		"rj" )		INC_NEW_STATUS=${JIRA_RJ};;
+		"do"* )		INC_NEW_STATUS=${JIRA_DO};;
+		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls | ip | AA | AP | AR| ID | DE | OH | RJ | DO[NE] ]";;
 	esac
 	}
 function f_get_help() {
@@ -591,7 +615,7 @@ function f_set_status() {
 	cat ${ticket_file_with_path} | sed -e "s/^# @Update.*$/# @Update\t${DATE}/g;s/^# @Status.*$/# @Status\t${INC_NEW_STATUS}/g" > ${ticket_file_with_path}.tmp
 	
 	log i "${grepped}/ticket.md.tmp was created with new STATUS: ${INC_NEW_STATUS}"
-	f_get_user_consent "Is the .tmp file OK?" "rm ${ticket_file_with_path}.tmp"
+	# f_get_user_consent "Is the .tmp file OK?" "rm ${ticket_file_with_path}.tmp"
 	log t "mv ${ticket_file_with_path}.tmp ${ticket_file_with_path}"
 	mv ${ticket_file_with_path}.tmp ${ticket_file_with_path}
 	}

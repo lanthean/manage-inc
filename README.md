@@ -27,7 +27,17 @@ Keep track (locally) of all the investigation effort put into solving support, d
 
 ## Usage
 
+```sh
 inc --help
+```
+
+### Clickup poll
+In case *Clickup* is used in tandem with `manage-inc` there is a python script capable of syncing task's statuses.
+```sh
+loopcmd python3 ~/bin/manage-inc/clickup-api-poll.py
+```
+*`loopcmd` is not in the scope of this solution, it is configured in my `tmux` to be able to restore running processes after reboot*
+
 
 ## Install
 
