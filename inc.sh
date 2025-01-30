@@ -54,7 +54,8 @@ function f_s_init() {
 	INC_RWC="RESTORED WC"
 	INC_RES="RESOLVED"
 	INC_CLS="CLOSED"
-	JIRA_IP="In Progress"
+	JIRA_TD="TO DO"
+	JIRA_IP="IN PROGRESS"
 	JIRA_WA="WAITING"
 	JIRA_AA="AWAIT AS"
 	JIRA_AP="AWAIT PO"
@@ -545,6 +546,7 @@ function f_get_status() {
 		"rwc" )		INC_NEW_STATUS=${INC_RWC};;
 		"res" )		INC_NEW_STATUS=${INC_RES};;
 		"cls" )		INC_NEW_STATUS=${INC_CLS};;
+		"td" )		INC_NEW_STATUS=${JIRA_TD};;
 		"ip" )		INC_NEW_STATUS=${JIRA_IP};;
 		"wa" )		INC_NEW_STATUS=${JIRA_WA};;
 		"aa" )		INC_NEW_STATUS=${JIRA_AA};;
@@ -555,7 +557,7 @@ function f_get_status() {
 		"oh" )		INC_NEW_STATUS=${JIRA_OH};;
 		"rj" )		INC_NEW_STATUS=${JIRA_RJ};;
 		"do"* )		INC_NEW_STATUS=${JIRA_DO};;
-		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls | ip | AA | AP | AR| ID | DE | OH | RJ | DO[NE] ]";;
+		* ) log e "f_get_status(): use these [ new | rsp | act | awc | rst | rwc | res | cls | td | ip | AA | AP | AR| ID | DE | OH | RJ | DO[NE] ]";;
 	esac
 	}
 function f_get_help() {

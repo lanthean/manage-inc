@@ -2,10 +2,12 @@
 import time
 import requests
 import subprocess
+import re
+import yaml
 
-# API Key and Team ID
-api_key = "clickup-api-key"
-team_id = "team-id"
+# API Key and Team ID (uncomment and fill with actual values)
+# api_key = "clickup-api-key"
+# team_id = "team-id"
 
 # API URL to fetch tasks
 url = f"https://api.clickup.com/api/v2/team/{team_id}/task"
@@ -17,68 +19,31 @@ headers = {
 }
 
 # Track last checked time
-last_checked = int( time.time() * 1000)
+last_checked = int(time.time() * 1000)
 
-def get_status(status):
-    JIRA_IP="ip"
-    JIRA_WA="wa"
-    JIRA_AA="aa"
-    JIRA_AP="ap"
-    JIRA_AR="ar"
-    JIRA_ID="id"
-    JIRA_DE="de"
-    JIRA_OH="oh"
-    JIRA_RJ="rj"
-    JIRA_DO="do"
-    status = status.upper()
+# Regex pattern to match the required formats
+pattern = re.compile(r"(CRQ-\d{4,})|(\d{6,})")
 
-    if status == "IN PROGRESS":
-        ret = JIRA_IP
-    elif status == "WAITING":
-        ret = JIRA_WA
-    elif status == "AWAITING ASSESSMENT":
-        ret = JIRA_AA
-    elif status == "AWAITING PO":
-        ret = JIRA_AP
-    elif status == "ACCEPTED TO ROADMAP":
-        ret = JIRA_AR
-    elif status == "IN DEVELOPMENT":
-        ret = JIRA_ID
-    elif status == "DEVELOPED":
-        ret = JIRA_DE
-    elif status == "ON HOLD":
-        ret = JIRA_OH
-    elif status == "REJECTED":
-        ret = JIRA_RJ
-    elif status == "DONE":
-        ret = JIRA_DO
-    elif status == "AWAITING PO":
-        ret = JIRA_AP
-    elif status == "AWAITING PO":
-        ret = JIRA_AP
-    elif status == "AWAITING PO":
-        ret = JIRA_AP
-    elif status == "AWAITING PO":
-        ret = JIRA_AP
-    elif status == "AWAITING PO":
-        ret = JIRA_AP
-    elif status == "AWAITING PO":
-        ret = JIRA_AP
-    else:
-        print(status)
-        ret = "UNKNOWN"
+# Load configuration from YAML file
+def load_config(file_path="clickup-api-poll.yaml"):
+    with open(file_path, "r") as file:
+        config = yaml.safe_load(file)
+    return config
 
-    return ret
+# Function to translate ClickUp status
+def get_status(clickup_status, config):
+    status = clickup_status.upper()
+
+    statuses = config.get("statuses", {})  # Get statuses dictionary
+    return statuses.get(status, "UNKNOWN")  # Default to "UNKNOWN" if not found
+
+# Function to filter tasks
+def filter_tasks(task_list):
+    return [task for task in task_list if pattern.search(task["name"])]
 
 def get_case_id(task_name):
-    if "[" in task_name:
-        start_position = task_name.find("[") + 1
-        end_position = task_name.find("]")
-        crq_portion = task_name[start_position:end_position]
-    else:
-        crq_portion = task_name.split(' ')[0]
-    
-    return crq_portion
+    match = pattern.search(task_name)
+    return match.group(0) if match else None  # Return matched ID or None
 
 while True:
     try:
@@ -90,13 +55,11 @@ while True:
         # Fetch tasks updated since the last check
         response = requests.get(url, headers=headers, params=params)
         if response.status_code == 200:
-            tasks = response.json().get("tasks", [])
-            
-            crq_tasks = [task for task in tasks if "CRQ" in task.get("name", "").upper()]
-            for task in crq_tasks:
+            filtered_tasks = filter_tasks(response.json().get("tasks", []))
+            for task in filtered_tasks:
                 task_name = get_case_id(task.get("name", "unknown task"))
-                status = get_status(task.get("status", {}).get("status", "unknown status"))
-                
+                status = get_status(task.get("status", {}).get("status", "unknown status"), load_config())
+
                 if status == "UNKNOWN":
                     print("ERROR: unknown status - {}".format(status))
                     continue
@@ -115,4 +78,4 @@ while True:
         print("Error:", e)
 
     # Sleep for a while before polling again
-    time.sleep(5)  # Check every 60 seconds
+    time.sleep(60)  # Check every 60 seconds
