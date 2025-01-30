@@ -644,112 +644,6 @@ function f_readinp() {
 	# Set proper case_type from input
 	f_get_case_type
 	} 
-function f_create_downloads_link() {
-	_id=$1
-	log t "id: ${_id}"
-
-	physical_directory=$(ls ${main_path} | grep ${_id})
-	if [[ $physical_directory == *"${delim}H2S${delim}"* ]];then
-		downloads_path="${user_downloads}/inc/h2s"
-	elif [[ $physical_directory == *$"${delim}DEV${delim}"* ]];then
-		downloads_path="${user_downloads}/inc/dev"
-	else
-		downloads_path="${user_downloads}/inc"
-	fi
-	
-	if [[ -d $downloads_path ]];then
-		log t "f_create_downloads_link(): downloads_path exists"
-	else
-	 	log w "Downloads path does not exist: $downloads_path, attemting to create it"
-		mkdir -p $downloads_path
-		if [[ $? == 0 ]];then
-			log t "f_create_downloads_link(): mkdir -p $downloads_path - success"
-		else
-			log t "f_create_downloads_link(): mkdir -p $downloads_path - fail"
-		fi
-	fi
-	log t "id: ${_id}"
-	log t "main_path: ${main_path}"
-	log t "downloads main_path: ${downloads_path}"
-	if [[ -d $downloads_path/$_id ]];then
-    log w "There is a directory in place of the new link location - reversing"
-    log t "ln -sn $downloads_path/$_id $main_path/$physical_directory/"
-    ln -sn $downloads_path/$_id $main_path/$physical_directory/
-	elif [[ -L $downloads_path/$_id ]];then
-		log w "There is a link in place, let's update it"
-		log t "ln -sfn ${main_path}/${physical_directory} ${downloads_path}/${_id}"
-		ln -sfn ${main_path}/${physical_directory} ${downloads_path}/${_id}
-	else
-		log i "Creating link to ${downloads_path}/${_id} -> $main_path/$physical_directory/"
-		log t "ln -sn ${main_path}/${physical_directory} ${downloads_path}/${_id}"
-		ln -sn ${main_path}/${physical_directory} ${downloads_path}/${_id}
-		if [ $? != 0 ];then
-			log e "Unknown error: Possibly broken link."
-			log e "Link to ${downloads_path}/${_id} -> $main_path/$physical_directory/ was not created."
-		fi
-	fi
-	}
-function f_update_downloads_link_to_done() {
-	id=$1
-	if [[ $id == *"H2S"* ]];then
-		downloads_path="${user_downloads}/inc/h2s"
-		id=${id:4}
-	else
-		downloads_path="${user_downloads}/inc"
-	fi
-	log t "downloads main_path: ${downloads_path}"
-	if [[ -L $downloads_path/$id ]];then
-		physical_directory=$(ls ${done_path} | grep ${id})
-		log i "Updating link to ${downloads_path}/${id} -> ${done_path}/${physical_directory}"
-		log t "ln -sfn ${done_path}/${physical_directory} ${downloads_path}/${id}"
-		ln -sfn ${done_path}/${physical_directory} ${downloads_path}/${id}
-		if [ $? != 0 ];then
-			log e "Unknown error: Possibly broken link"
-			log e "Link to ${downloads_path}/${id} was not updated"
-		fi
-	elif [[ -d $downloads_path/$id ]];then
-		log w "There is a directory in place of the new link location - reversing"
-		log t "ln -sfn $downloads_path/$id $done_path/$physical_directory/"
-		ln -sfn $downloads_path/$id $done_path/$physical_directory/
-	fi
-	}
-function f_remove_downloads_link() {
-	_id=$1
-
-	log t "id: ${_id}"
-	if [[ $_id == *"H2S"* ]];then
-		downloads_path="${user_downloads}/h2s"
-		_id=${_id:4}
-	elif [[ $_id == *"CUS-"* ]];then
-		downloads_path="${user_downloads}/dev"
-	else
-		downloads_path="${user_downloads}/inc"
-	fi
-
-	log t "id: ${_id}"
-	log t "main_path: ${main_path}"
-	log t "downloads main_path: ${downloads_path}"
-	if [ -L ${downloads_path}/${_id} ];then
-		log i "Removing link to ${downloads_path}/${_id}."
-		rm ${downloads_path}/${_id}
-		if [ $? != 0 ];then
-			log e "Unknown error: Possibly broken link."
-			log e "Link to ${downloads_path}/${_id} was not deleted."
-		fi
-	else
-		log w "Link to ${downloads_path}/${_id} does not exist."
-	fi
-	# Silently remove possible broken remnants in other paths
-	if [ -L ${user_downloads}/h2s/${_id} ];then
-		rm ${user_downloads}/h2s/${_id} > /dev/null 2>&1 
-	fi		
-	if [ -L ${user_downloads}/dev/${_id} ];then
-		rm ${user_downloads}/dev/${_id} > /dev/null 2>&1 
-	fi		
-	if [ -L ${user_downloads}/inc/${_id} ];then
-		rm ${user_downloads}/inc/${_id} > /dev/null 2>&1 
-	fi		
-	}	
 function f_create_new_inc () { 
 	# New incident
 	# Let's create a new incident
@@ -863,9 +757,9 @@ function f_create_new_inc () {
 
 	f_readinp
 
-	cust=${cust//[.,;:\/\[\]\(\)+ ]/-}
-	desc=${desc//[.,;:\/\[\]\(\)+ ]/-}
-	contact=${contact//[.,;:\/\[\]\(\)+ ]/-}
+	cust=${cust//[.,;:\/\[\]\(\)+\$ ]/-}
+	desc=${desc//[.,;:\/\[\]\(\)+\$ ]/-}
+	contact=${contact//[.,;:\/\[\]\(\)+\$ ]/-}
 	[[ "x${esc_cust}x" == "xx" ]] && esc_cust=$cust
 	[[ "x${esc_desc}x" == "xx" ]] && esc_desc=$desc
 
@@ -917,6 +811,112 @@ function f_create_new_inc () {
 			;;
 	esac
 	} 
+function f_create_downloads_link() {
+	_id=$1
+	log t "id: ${_id}"
+
+	physical_directory=$(ls ${main_path} | grep ${_id})
+	if [[ $physical_directory == *"${delim}H2S${delim}"* ]];then
+		downloads_path="${user_downloads}/inc/h2s"
+	elif [[ $physical_directory == *$"${delim}DEV${delim}"* ]];then
+		downloads_path="${user_downloads}/inc/dev"
+	else
+		downloads_path="${user_downloads}/inc"
+	fi
+	
+	if [[ -d $downloads_path ]];then
+		log t "f_create_downloads_link(): downloads_path exists"
+	else
+	 	log w "Downloads path does not exist: $downloads_path, attemting to create it"
+		mkdir -p $downloads_path
+		if [[ $? == 0 ]];then
+			log t "f_create_downloads_link(): mkdir -p $downloads_path - success"
+		else
+			log t "f_create_downloads_link(): mkdir -p $downloads_path - fail"
+		fi
+	fi
+	log t "id: ${_id}"
+	log t "main_path: ${main_path}"
+	log t "downloads main_path: ${downloads_path}"
+	if [[ -d $downloads_path/$_id ]];then
+    log w "There is a directory in place of the new link location - reversing"
+    log t "ln -sn $downloads_path/$_id $main_path/$physical_directory/"
+    ln -sn $downloads_path/$_id $main_path/$physical_directory/
+	elif [[ -L $downloads_path/$_id ]];then
+		log w "There is a link in place, let's update it"
+		log t "ln -sfn ${main_path}/${physical_directory} ${downloads_path}/${_id}"
+		ln -sfn ${main_path}/${physical_directory} ${downloads_path}/${_id}
+	else
+		log i "Creating link to ${downloads_path}/${_id} -> $main_path/$physical_directory/"
+		log t "ln -sn ${main_path}/${physical_directory} ${downloads_path}/${_id}"
+		ln -sn ${main_path}/${physical_directory} ${downloads_path}/${_id}
+		if [ $? != 0 ];then
+			log e "Unknown error: Possibly broken link."
+			log e "Link to ${downloads_path}/${_id} -> $main_path/$physical_directory/ was not created."
+		fi
+	fi
+	}
+function f_update_downloads_link_to_done() {
+	id=$1
+	if [[ $id == *"H2S"* ]];then
+		downloads_path="${user_downloads}/inc/h2s"
+		id=${id:4}
+	else
+		downloads_path="${user_downloads}/inc"
+	fi
+	log t "downloads main_path: ${downloads_path}"
+	if [[ -L $downloads_path/$id ]];then
+		physical_directory=$(ls ${done_path} | grep ${id})
+		log i "Updating link to ${downloads_path}/${id} -> ${done_path}/${physical_directory}"
+		log t "ln -sfn ${done_path}/${physical_directory} ${downloads_path}/${id}"
+		ln -sfn ${done_path}/${physical_directory} ${downloads_path}/${id}
+		if [ $? != 0 ];then
+			log e "Unknown error: Possibly broken link"
+			log e "Link to ${downloads_path}/${id} was not updated"
+		fi
+	elif [[ -d $downloads_path/$id ]];then
+		log w "There is a directory in place of the new link location - reversing"
+		log t "ln -sfn $downloads_path/$id $done_path/$physical_directory/"
+		ln -sfn $downloads_path/$id $done_path/$physical_directory/
+	fi
+	}
+function f_remove_downloads_link() {
+	_id=$1
+
+	log t "id: ${_id}"
+	if [[ $_id == *"H2S"* ]];then
+		downloads_path="${user_downloads}/h2s"
+		_id=${_id:4}
+	elif [[ $_id == *"CUS-"* ]];then
+		downloads_path="${user_downloads}/dev"
+	else
+		downloads_path="${user_downloads}/inc"
+	fi
+
+	log t "id: ${_id}"
+	log t "main_path: ${main_path}"
+	log t "downloads main_path: ${downloads_path}"
+	if [ -L ${downloads_path}/${_id} ];then
+		log i "Removing link to ${downloads_path}/${_id}."
+		rm ${downloads_path}/${_id}
+		if [ $? != 0 ];then
+			log e "Unknown error: Possibly broken link."
+			log e "Link to ${downloads_path}/${_id} was not deleted."
+		fi
+	else
+		log w "Link to ${downloads_path}/${_id} does not exist."
+	fi
+	# Silently remove possible broken remnants in other paths
+	if [ -L ${user_downloads}/h2s/${_id} ];then
+		rm ${user_downloads}/h2s/${_id} > /dev/null 2>&1 
+	fi		
+	if [ -L ${user_downloads}/dev/${_id} ];then
+		rm ${user_downloads}/dev/${_id} > /dev/null 2>&1 
+	fi		
+	if [ -L ${user_downloads}/inc/${_id} ];then
+		rm ${user_downloads}/inc/${_id} > /dev/null 2>&1 
+	fi		
+	}	
 function f_parse_inc_name() {
 	# Get main variables from inc main_path name
 	# e.g. id; description
