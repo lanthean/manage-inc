@@ -38,7 +38,7 @@ function f_s_init() {
 	# LOG_DISABLED=true
 	LOG_FILE=$def_path/log/incidents.log
 
-	VIM=vim
+	VIM=gvim
 	TODOAPP=all
 
 	TODOTXT_FILE="${HOME}/Dropbox/Apps/Todotxt+/work.todo"
@@ -54,13 +54,15 @@ function f_s_init() {
 	INC_RWC="RESTORED WC"
 	INC_RES="RESOLVED"
 	INC_CLS="CLOSED"
+	JIRA_OP="OPEN"
 	JIRA_TD="TO DO"
 	JIRA_IP="IN PROGRESS"
 	JIRA_WA="WAITING"
-	JIRA_AA="AWAIT AS"
+	JIRA_AA="AWAIT ASSESS"
 	JIRA_AP="AWAIT PO"
-	JIRA_AR="IN RMAP"
+	JIRA_AR="IN ROADMAP"
 	JIRA_ID="IN DEVEL"
+	JIRA_IE="IN ENG"
 	JIRA_DE="DEVELOPED"
 	JIRA_OH="ON HOLD"
 	JIRA_RJ="REJECTED"
@@ -98,7 +100,7 @@ function f_s_init() {
 		pushd /opt
 		sudo git clone https://github.com/lanthean/gbf.git
 		popd
-		sudo chown -R $USER:staff /opt/gbf
+		sudo chown -R $user:staff /opt/gbf
 	fi
 	source /opt/gbf/generic_bash_functions
 	} 
@@ -384,7 +386,7 @@ function f_get_development_cases() {
 		if [[ $1 == "todotxt" ]];then
 			echo "@${_type,,} +${_id} ${_team} ${_customer} ${_description}" >> $jira_file
 		else
-			printf "%-8s | %3s | %3s | %-30s | %-120s |%-10s |%-8s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$STATUS" "$U" >> $jira_file
+			printf "%-8s | %3s | %3s | %-30s | %-120s |%-12s |%-8s\n" "$_id" "$_type" "$_team" "$_customer" "$_description" "$STATUS" "$U" >> $jira_file
 		fi
 	done 
 	}
@@ -546,6 +548,7 @@ function f_get_status() {
 		"rwc" )		INC_NEW_STATUS=${INC_RWC};;
 		"res" )		INC_NEW_STATUS=${INC_RES};;
 		"cls" )		INC_NEW_STATUS=${INC_CLS};;
+		"op" )		INC_NEW_STATUS=${JIRA_OP};;
 		"td" )		INC_NEW_STATUS=${JIRA_TD};;
 		"ip" )		INC_NEW_STATUS=${JIRA_IP};;
 		"wa" )		INC_NEW_STATUS=${JIRA_WA};;
@@ -1309,10 +1312,11 @@ function f_args() {
 			return
 			;;
 		"li" | "lj" | "ld" | "lh" )
-			/usr/bin/clear
+			# /usr/bin/clear
 			echo $main_path
 			f_s_boc
-			f_ls $@
+			log t "f_args: $@"
+			f_ls "$@"
 			return
 			;;
 		"ls" | "lstate" ) #listing function
@@ -1359,7 +1363,7 @@ function f_args() {
 	} 
 
 function f_ls() { 
-	log t "f_ls(): $*"
+	log t "f_ls(): $@"
 	if [ $# -gt $EXP_ARGS ]; then
 		case $2 in 
 			"--raw" )
@@ -1465,8 +1469,8 @@ function f_ls() {
 				return
 				;;
 			*)
-				log i "Listing inc with \"grep $2\""
-				f_ls_prototype $@
+				log i "Listing inc with \"grep '$2'\""
+				f_ls_prototype "$*"
 				return
 				;;
 		esac 
@@ -1483,13 +1487,12 @@ function f_ls_prototype() {
 	inc_file=/tmp/inc.manage-inc
 	jira_file=/tmp/jira.manage-inc
 	h2s_file=/tmp/h2s.manage-inc
-	log t "f_ls_prototype() - \$1=$1; \$2=$2; \$3=$3; "
-
+	log t "f_ls_prototype() - \$*='$*'; \$1='$1'; \$2='$2'; \$3="$3"; "
 	li_sort="sort -t | -k8,8 -k7,7 -k6,6 -k1,1 -k3,3"
 	lj_sort="sort -t | -k7,7 -k1,1 -k3,3"
 	lh_sort="sort -t | -k8,8 -k1,1 -k3,3"
 	if [ "$2" == "-bto" -o "$2" == "-b" -o "$2" == "-d" -o "$2" == "--done" ]; then
-		grep=$3
+		grep="$3"
 		if [[ $2 == "-d" ]] || [[ $2 == "--done" ]];then
 			main_path=$done_path
 			title_suffix="[DONE]"
@@ -1504,7 +1507,7 @@ function f_ls_prototype() {
 		fi
 	else
 		todotxt=""
-		grep=$2
+		grep="$2"
 	fi
 	if [[ $grep != "" ]];then
 		str_search="- search: ${grep}"
@@ -1836,9 +1839,11 @@ function f_todotxt() {
 	} # eo: f_todotxt()
 
 ### Main {{
+#echo "pre init main(): \$@: " "$@"
 f_s_init
+log t "main(): \$@: $@"
 if [[ $1 == "--bashcompletion" ]];then
-	echo $@
+	# echo "$@"
 	if [[ $2 == "inc" ]] || [[ $2 == "ops" ]];then
 		if [[ $2 == "inc" ]];then
 			if [[ $3 == "-s" ]];then
@@ -1873,7 +1878,7 @@ if [[ $1 == "--bashcompletion" ]];then
 fi
 f_s_boc
 if [ $EXP_ARGS -le $# ]; then
-	f_args $@
+	f_args "$@"
 else
 	f_id_as_first_argument
 fi #EXP_ARGS
