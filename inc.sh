@@ -798,7 +798,7 @@ function f_create_new_inc () {
 
 			# echo "$main_path/$newinc/ticket" v "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS"
 			# read -p "Press any key to continue"
-			$HOME/bin/newincf "$main_path/$newinc/ticket" vim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS" "$LINK_TO" "$CONNECTION_MANAGER"
+			$HOME/bin/newincf "$main_path/$newinc/ticket" gvim "$DATE" "$UPDATE" "$PRI" "$ID" "$SFID" "$TOPIC" "$CUSTOMER" "$PRODUCT" "$SYSTEMS" "$RELEASE" "$CONTACT" "$STATUS" "$LINK_TO" "$CONNECTION_MANAGER"
 
 			# f_check_links
 			if [ $? == 0 ]; then
@@ -1016,6 +1016,7 @@ function f_rename() {
 function f_open() {
 	if [[ -z $grepped ]] || [[ $grepped == 0 ]];then
 		log e "I do not know what to open"
+		log t "f_open(): \$grepped = $grepped"
 	else
 		log t "Opening $main_path/$grepped/ticket.*"
 		if [[ $(ls "$main_path/$grepped/" | grep "ticket" | wc -l) -ge 1 ]];then
