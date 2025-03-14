@@ -634,7 +634,7 @@ function f_readinp() {
 	read -p "|	Short description of the incident [${desc}]: " _desc
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Priority of the incident [${prio}]: " _prio
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Status of the incident [${stat}]: " _stat
-	read -p "|	Contact: " contact
+	read -p "|	Contact: [$contact]" _contact
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Systems: " systems
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Release: " release
 	read -p "|	SF-ID [${sfid}]: " _sfid
@@ -645,6 +645,7 @@ function f_readinp() {
 	[ "x${_prio}x" != "xx" ] &&  prio=$_prio
 	[ "x${_stat}x" != "xx" ] &&  stat=$_stat
 	[ "x${_sfid}x" != "xx" ] &&  sfid=$_sfid
+	[ "x${_contact}x" != "xx" ] &&  contact=$_contact
 
 	# Set proper case_type from input
 	f_get_case_type
