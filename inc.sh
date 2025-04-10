@@ -634,7 +634,7 @@ function f_readinp() {
 	read -p "|	Short description of the incident [${desc}]: " _desc
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Priority of the incident [${prio}]: " _prio
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Status of the incident [${stat}]: " _stat
-	read -p "|	Contact: [$contact]" _contact
+	read -p "|	Contact [$contact]: " _contact
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Systems: " systems
 	[[ $INC_MATCHED == 1 ]] && read -p "|	Release: " release
 	read -p "|	SF-ID [${sfid}]: " _sfid
