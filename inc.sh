@@ -20,9 +20,6 @@ timer_start=$(date +"%s%N")
 VERSION='2.2.6'
 COPYRIGHT='lanthean@protonmail.com, https://github.com/lanthean'
 
-# available LOG_LEVEL values: t,d,i,w,e
-LOG_LEVEL=i
-
 ## Static functions
 function f_s_init() {
 	# def vars
@@ -31,12 +28,9 @@ function f_s_init() {
 	script_name='inc'
 	EXP_ARGS=1
 	year="$(date +"%Y")"
-	def_path=~/inc
+	
+	. $HOME/bin/manage-inc/config.sh
 	main_path=$def_path
-
-	## disable logging [true|false]
-	# LOG_DISABLED=true
-	LOG_FILE=$def_path/log/incidents.log
 
 	VIM=gvim
 	TODOAPP=all
@@ -1779,6 +1773,7 @@ function f_clickup() {
 	log t "cust: $cust"
 	log t "desc: $desc"
 	# exit 1
+	log t "f_clickup(): curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id'"
 	curl_grepped=$(curl -i -X GET   'https://api.clickup.com/api/v2/list/901500674177/task'   -H 'Authorization: pk_84124814_9IEAZLR9RNAVLHL4A03ISKGZS6LL3ZZ3' | grep -oc $id)
 	if [[ $curl_grepped == 0 ]];then
 		log i "Creating clickup task"
@@ -1804,6 +1799,7 @@ function f_clickup() {
 		fi
 	else
 		log w "Task already exists"
+		log t "f_clickup(): return code - $rc"
 		log i "Nothing to do - prehaps UPDATE operation might be considered here"
 	fi
 } # eo: f_clickup()
